@@ -1,0 +1,35 @@
+{
+  "name": "frappe-chat",
+  "version": "0.1.0",
+  "description": "",
+  "main": "dist/js/frappe.chat.js",
+  "scripts": {
+    "build": "rollup --watch --config build/rollup.config.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/frappe/chat.git"
+  },
+  "keywords": [
+    "frappe",
+    "chat",
+    "messenger"
+  ],
+  "author": "Achilles Rasquinha",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/frappe/chat/issues"
+  },
+  "homepage": "https://github.com/frappe/chat#readme",
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-preset-env": "^1.6.0",
+    "express": "^4.15.5",
+    "rollup": "^0.50.0",
+    "rollup-plugin-node-resolve": "^3.0.0"
+  },
+  "dependencies": {
+    "jquery": "^3.2.1",
+    "socket.io": "^2.0.3"
+  }
+}
