@@ -1,10 +1,12 @@
-import FAB     from './FAB'
-import ChatBox from './ChatBox'
+import FAB       from './FAB'
+import SearchBar from './SearchBar'
+import ChatBox   from './ChatBox'
 
 const ui = 
 {
-	    FAB: FAB,
-	ChatBox: ChatBox
+	      FAB: FAB,
+	SearchBar: SearchBar,
+	  ChatBox: ChatBox,
 }
 
 export default ui

@@ -12,14 +12,11 @@ class FAB
 			      'box-shadow': '0px 0px 12px 3px rgba(0,0,0,0.25)'
 		})
 		this.$element.css({
-			width: 64, height: 64
+			width: this.options.size, height: this.options.size
 		})
-		this.$element.css({
-			// position: 'absolute',
-			  bottom: 0,
-			   right: 0,
-			  margin: 20
-		})
+
+		this.$icon    = this.$element.find('.fab-icon')
+		this.$icon.addClass(this.options.icon)
 	}
 
 	click (callback)
@@ -29,15 +26,17 @@ class FAB
 }
 FAB.OPTIONS  =
 {
+	 size: 64,
 	color:
 	{
 		primary: '#7575FF'
-	}
+	},
+	 icon: 'glyphicon glyphicon-plus'
 }
 FAB.TEMPLATE = 
 `
-<button class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-	<i class="glyphicon glyphicon-plus"/>
+<button class="btn btn-default">
+	<i class="fab-icon"/>
 </button>
 `;
 
