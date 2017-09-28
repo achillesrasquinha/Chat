@@ -22,6 +22,16 @@ class FAB
 		this.$icon.addClass(this.options.icon);
 	}
 
+	show ( )
+	{
+		this.$element.show();
+	}
+
+	hide ( )
+	{
+		this.$element.hide();
+	}
+
 	click (callback)
 	{
 		this.$element.click(callback);
@@ -63,6 +73,16 @@ class SearchBar
 			if (!event.isDefaultPrevented())
 				 event.preventDefault();
 		});
+	}
+
+	show ( )
+	{
+		this.$element.show();
+	}
+
+	hide ( )
+	{
+		this.$element.hide();
 	}
 
 	change (callback)
@@ -116,19 +136,43 @@ class ChatList
 	{
 		this.options  = Object.assign({ }, ChatList.OPTIONS, options);
 		this.$element = $(ChatList.TEMPLATE);
-		
-		this.fab      = new FAB({
-			 size: 56,
-			color: this.options.color
-		});
-		this.fab.$element.css({
-			position: 'absolute',
-			  bottom: 0,
-			   right: 0,
-			  margin: 20
-		});
+		this.items    = Array();
+	}
 
-		this.$element.append(this.fab.$element);
+	fuel  (data)
+	{
+		data.users.forEach((user) => {
+			var item   = new ChatList.Item();
+			item.fuel(user);
+
+			this.$element.append(item.$element);
+			this.items.push(item);
+		});
+	}
+
+	snip  (callback)
+	{
+		this.items.forEach((item) => {
+			if ( callback(item) )
+				item.hide();
+			else
+				item.show();
+		});
+	}
+
+	show ( )
+	{
+		this.$element.show();
+	}
+
+	hide ( )
+	{
+		this.$element.hide();
+	}
+
+	click (callback)
+	{
+		this.items.forEach((item) => item.click(() => callback(item)));
 	}
 }
 ChatList.OPTIONS       = 
@@ -140,8 +184,11 @@ ChatList.OPTIONS       =
 };
 ChatList.TEMPLATE      = 
 `
-<div class="list-group">
-	
+<div class="list-group" style=
+"	
+	max-height: 475px;
+	overflow-y: scroll
+">	
 </div>
 `;
 
@@ -151,6 +198,32 @@ ChatList.Item          = class
 	{
 		this.options   = Object.assign({ }, ChatList.Item.OPTIONS, options);
 		this.$element  = $(ChatList.Item.TEMPLATE);
+
+		this.$heading  = this.$element.find('.frappe-chat-list-item-heading');
+		this.$avatar   = this.$element.find('.frappe-chat-list-item-avatar');
+	}
+
+	fuel (data)
+	{
+		const { name, avatar } = data;
+
+		this.$heading.html(name);
+		this.$avatar .attr('src', avatar);
+	}
+
+	show ( )
+	{
+		this.$element.show();
+	}
+
+	hide ( )
+	{
+		this.$element.hide();
+	}
+
+	click (callback)
+	{
+		this.$element.click(callback);
 	}
 };
 ChatList.Item.OPTIONS  = 
@@ -160,7 +233,122 @@ ChatList.Item.OPTIONS  =
 ChatList.Item.TEMPLATE = 
 `
 <div class="list-group-item">
+	<a href="javascript:void(0);">
+		<div class="row">
+			<div class="col-xs-3">
+				<div class="text-center">
+					<img class="frappe-chat-list-item-avatar img-responsive img-circle img-thumbnail" height="48"/>
+				</div>
+			</div>
+			<div class="col-xs-9">
+				<h5 class="frappe-chat-list-item-heading"/>
+			</div>
+		</div>
+	</a>
+</div>
+`;
 
+class ChatForm
+{
+	constructor (options = { })
+	{
+		this.options   = Object.assign({ }, ChatForm.OPTIONS, options);
+		this.$element  = $(ChatForm.TEMPLATE);
+
+		this.$input    = this.$element.find('.frappe-chat-form-input');
+		this.$element.find('.frappe-chat-form-send').css({
+			'background-color': this.options.color.primary,
+					   'color': '#FEFEFE' // TODO: This should be autodetected.
+		});
+	}
+
+	submit (callback)
+	{
+		this.$element.submit((event) => {
+			if (!event.isDefaultPrevented() )
+				 event.preventDefault();
+
+			const value  = this.$input.val();
+			if ( value !== "" )
+			{
+				const message = { content: value };
+				
+				callback(message);
+
+				this.$input.val("");
+			}
+		});
+	}
+}
+ChatForm.OPTIONS  =
+{
+	color:
+	{
+		primary: '#7575FF'
+	}
+};
+ChatForm.TEMPLATE = 
+`
+<form>
+	<div class="input-group">
+		<div class="frappe-chat-form-emoji input-group-btn">
+			
+		</div>
+		<input
+			class="frappe-chat-form-input form-control"
+			placeholder="Type a message..."/>
+		<div class="input-group-btn">
+			<button class="frappe-chat-form-send btn btn-default">
+				<i class="glyphicon glyphicon-send"/>
+			</button>
+		</div>
+	</div>
+</form>
+`;
+
+class ChatWindow
+{
+	constructor (options = { })
+	{
+		this.options   = Object.assign({ }, ChatWindow.OPTIONS, options);
+		this.$element  = $(ChatWindow.TEMPLATE);
+
+		this.chatform  = new ChatForm({
+			color: this.options.color
+		});
+		this.chatform.$element.css({
+			position: 'absolute',
+			  bottom: 0,
+			  margin: 20
+		});
+		this.chatform.submit((message) => {
+			console.log(message);
+		});
+
+		this.$element.append(this.chatform.$element);
+	}
+
+	show ( )
+	{
+		this.$element.show();
+	}
+
+	hide ( )
+	{
+		this.$element.hide();
+	}
+}
+ChatWindow.OPTIONS     = 
+{
+	color:
+	{
+		primary: '#7575FF'
+	}
+};
+ChatWindow.TEMPLATE    = 
+`
+<div class="frappe-chat-window">
+	
 </div>
 `;
 
@@ -181,13 +369,67 @@ class ChatBox
 		this.$title.html(this.options.title);
 
 		this.searchBar  = new SearchBar({ color: this.options.color, autofocus: true });
+		this.fab        = new FAB({
+			size: 56,
+		   color: this.options.color
+	   });
+	   this.fab.$element.css({
+		   position: 'absolute',
+			 bottom: 0,
+			  right: 0,
+			 margin: 20
+	   });
+
 		this.chatList   = new ChatList();
+		this.chatWindow = new ChatWindow();
 
 		this.$element.find('.panel-body').append(this.searchBar.$element);
 		this.$element.append(this.chatList.$element);
+		this.$element.append(this.fab.$element);
+		this.$element.append(this.chatWindow.$element);
+
+		this.chatWindow.hide();
+	}
+
+	open (name)
+	{
+		this.$title.html(name);
+
+		this.searchBar.hide(); this.chatList.hide(); this.fab.hide();
+		this.chatWindow.show();
+	}
+
+	fuel (data)
+	{
+		this.chatList.fuel(data);
 
 		this.searchBar.change((query) => {
-			console.log(query);
+			this.chatList.snip((item) => {
+				if ( query )
+				{
+					var name    = item.$heading.html();
+					
+					// warning: fuzzy matching code ahead (or it looks like).
+					var tokens  = name.split(' ');
+					var matched = false;
+					for (var i  = 0 ; i < tokens.length ; ++i)
+						if ( tokens[i].toLowerCase().includes(query.toLowerCase()) )
+						{
+							matched = true;
+							break
+						}
+					// end
+	
+					return !matched
+				} else {
+					return false
+				}
+			});
+		});
+
+		this.chatList.click((item) => {
+			var name = item.$heading.html();
+			this.open(name);
 		});
 	}
 }
@@ -233,6 +475,9 @@ class Chat
 	{
 		this.options  = Object.assign({ }, Chat.OPTIONS, options);
 		this.$element = $(Chat.TEMPLATE);
+
+		this.position(Chat.POSITION.BOTTOM_RIGHT);
+
 		this.$element.css({
 			position: 'absolute',
 			  bottom: 0,
@@ -247,7 +492,7 @@ class Chat
 		});
 		this.fab.$element.addClass('dropdown-toggle');
 		this.fab.$element.attr('data-toggle', 'dropdown');
-		this.fab.$element.click(() => {
+		this.fab.click(() => {
 			this.fab.$icon.toggleClass('glyphicon-comment');
 			this.fab.$icon.toggleClass('glyphicon-remove');
 		});
@@ -263,28 +508,37 @@ class Chat
 		$('body').append(this.$element);
 	}
 
+	fuel (data)
+	{
+		this.chatBox.fuel(data);
+	}
+
 	show ( )
 	{
 		this.$element.show();
 	}
 }
+Chat.POSITION = { BOTTOM_RIGHT: 'br' };
 Chat.OPTIONS  = 
 {
-	color:
-	{
-		primary: '#7575FF'
-	}
+	position: Chat.POSITION.BOTTOM_RIGHT,
+	   color:
+	   {
+		   primary: '#7575FF'
+	   }
 };
 Chat.TEMPLATE = 
 `
-<div class="frappe-chat dropup">
-	<div class="dropdown-menu dropdown-menu-right" style=
-	"
-		margin-bottom: 12px;
-		      padding: 0    !important;
-		       border: none !important
-	">
-		
+<div class="frappe-chat">
+	<div class="dropup">
+		<div class="dropdown-menu dropdown-menu-right" style=
+		"
+			margin-bottom: 12px;
+				padding: 0    !important;
+				border: none !important
+		">
+			
+		</div>
 	</div>
 </div>
 `;

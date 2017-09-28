@@ -6,6 +6,9 @@ class Chat
 	{
 		this.options  = Object.assign({ }, Chat.OPTIONS, options)
 		this.$element = $(Chat.TEMPLATE)
+
+		this.position(Chat.POSITION.BOTTOM_RIGHT)
+
 		this.$element.css({
 			position: 'absolute',
 			  bottom: 0,
@@ -20,7 +23,7 @@ class Chat
 		});
 		this.fab.$element.addClass('dropdown-toggle')
 		this.fab.$element.attr('data-toggle', 'dropdown')
-		this.fab.$element.click(() => {
+		this.fab.click(() => {
 			this.fab.$icon.toggleClass('glyphicon-comment')
 			this.fab.$icon.toggleClass('glyphicon-remove')
 		})
@@ -36,28 +39,37 @@ class Chat
 		$('body').append(this.$element)
 	}
 
+	fuel (data)
+	{
+		this.chatBox.fuel(data)
+	}
+
 	show ( )
 	{
 		this.$element.show()
 	}
 }
+Chat.POSITION = { BOTTOM_RIGHT: 'br' }
 Chat.OPTIONS  = 
 {
-	color:
-	{
-		primary: '#7575FF'
-	}
+	position: Chat.POSITION.BOTTOM_RIGHT,
+	   color:
+	   {
+		   primary: '#7575FF'
+	   }
 }
 Chat.TEMPLATE = 
 `
-<div class="frappe-chat dropup">
-	<div class="dropdown-menu dropdown-menu-right" style=
-	"
-		margin-bottom: 12px;
-		      padding: 0    !important;
-		       border: none !important
-	">
-		
+<div class="frappe-chat">
+	<div class="dropup">
+		<div class="dropdown-menu dropdown-menu-right" style=
+		"
+			margin-bottom: 12px;
+				padding: 0    !important;
+				border: none !important
+		">
+			
+		</div>
 	</div>
 </div>
 `

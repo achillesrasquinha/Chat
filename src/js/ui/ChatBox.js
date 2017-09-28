@@ -1,5 +1,7 @@
-import SearchBar from './SearchBar'
-import ChatList  from './ChatList'
+import FAB        from './FAB'
+import SearchBar  from './SearchBar'
+import ChatList   from './ChatList'
+import ChatWindow from './ChatWindow'
 
 class ChatBox
 {
@@ -18,13 +20,67 @@ class ChatBox
 		this.$title.html(this.options.title)
 
 		this.searchBar  = new SearchBar({ color: this.options.color, autofocus: true })
+		this.fab        = new FAB({
+			size: 56,
+		   color: this.options.color
+	   })
+	   this.fab.$element.css({
+		   position: 'absolute',
+			 bottom: 0,
+			  right: 0,
+			 margin: 20
+	   })
+
 		this.chatList   = new ChatList()
+		this.chatWindow = new ChatWindow()
 
 		this.$element.find('.panel-body').append(this.searchBar.$element)
 		this.$element.append(this.chatList.$element)
+		this.$element.append(this.fab.$element)
+		this.$element.append(this.chatWindow.$element)
+
+		this.chatWindow.hide()
+	}
+
+	open (name)
+	{
+		this.$title.html(name)
+
+		this.searchBar.hide(); this.chatList.hide(); this.fab.hide();
+		this.chatWindow.show();
+	}
+
+	fuel (data)
+	{
+		this.chatList.fuel(data)
 
 		this.searchBar.change((query) => {
-			console.log(query)
+			this.chatList.snip((item) => {
+				if ( query )
+				{
+					var name    = item.$heading.html()
+					
+					// warning: fuzzy matching code ahead (or it looks like).
+					var tokens  = name.split(' ')
+					var matched = false
+					for (var i  = 0 ; i < tokens.length ; ++i)
+						if ( tokens[i].toLowerCase().includes(query.toLowerCase()) )
+						{
+							matched = true
+							break
+						}
+					// end
+	
+					return !matched
+				} else {
+					return false
+				}
+			});
+		})
+
+		this.chatList.click((item) => {
+			var name = item.$heading.html()
+			this.open(name)
 		})
 	}
 }

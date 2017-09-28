@@ -20,6 +20,16 @@ class SearchBar
 		})
 	}
 
+	show ( )
+	{
+		this.$element.show()
+	}
+
+	hide ( )
+	{
+		this.$element.hide()
+	}
+
 	change (callback)
 	{
 		this.$input.on('change keyup paste', () => {

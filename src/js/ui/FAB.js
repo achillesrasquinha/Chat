@@ -19,6 +19,16 @@ class FAB
 		this.$icon.addClass(this.options.icon)
 	}
 
+	show ( )
+	{
+		this.$element.show()
+	}
+
+	hide ( )
+	{
+		this.$element.hide()
+	}
+
 	click (callback)
 	{
 		this.$element.click(callback)

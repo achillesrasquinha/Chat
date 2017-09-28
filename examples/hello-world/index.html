@@ -29,8 +29,43 @@
 		<script
 			src="/static/js/frappe-chat.js"></script>
 		<script>
-			var chat = new frappe.Chat();
+			var data = 
+			{
+				users: 
+				[
+					{
+						  name: "Vito Corleone",
+						avatar: "http://placehold.it/300x300"
+					},
+					{
+						  name: "Sunny Corleone",
+						avatar: "http://placehold.it/300x300"
+					},
+					{	
+						  name: "Michael Corleone",
+						avatar: "http://placehold.it/300x300"
+					},
+					{
+						  name: "Jonny Fontaine",
+						avatar: "http://placehold.it/300x300"
+					},
+					{
+						  name: "Tom Hagen",
+						avatar: "http://placehold.it/300x300"
+					},
+					{
+						  name: "Virgil Sollozo",
+						avatar: "http://placehold.it/300x300"
+					}
+				]
+			}
+
+			var chat = new frappe.Chat({
+				position: 'tl'
+			});
+			chat.fuel(data);
 			chat.show();
+
 		</script>
 	</body>
 </html>
