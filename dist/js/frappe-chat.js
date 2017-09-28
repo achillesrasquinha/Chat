@@ -475,16 +475,9 @@ class Chat
 	{
 		this.options  = Object.assign({ }, Chat.OPTIONS, options);
 		this.$element = $(Chat.TEMPLATE);
-
-		this.position(Chat.POSITION.BOTTOM_RIGHT);
-
-		this.$element.css({
-			position: 'absolute',
-			  bottom: 0,
-			   right: 0,
-			  margin: 20
-		});
 		this.$element.hide();
+
+		this.position(this.options.position);
 
 		this.fab      = new ui.FAB({
 			color: this.options.color,
@@ -508,6 +501,41 @@ class Chat
 		$('body').append(this.$element);
 	}
 
+	position (which)
+	{
+		var css        = 
+		{
+			position: 'absolute',
+			  margin: this.options.margin
+		};
+		var $menu      = this.$element.find('.dropdown-menu');
+
+		var tokens     = which.split('');
+		if ( tokens.includes('t') )
+		{
+			css.top    = 0;
+			this.$element.addClass('dropdown');
+		}
+		if ( tokens.includes('b') )
+		{
+			css.bottom = 0;
+			this.$element.addClass('dropup');
+		}
+		if ( tokens.includes('l') )
+		{
+			css.left   = 0;
+
+			$menu.addClass('dropdown-menu-left');
+		}
+		if ( tokens.includes('r') )
+		{
+			css.right  = 0;
+			$menu.addClass('dropdown-menu-right');
+		}
+
+		this.$element.css(css);
+	}
+
 	fuel (data)
 	{
 		this.chatBox.fuel(data);
@@ -518,10 +546,11 @@ class Chat
 		this.$element.show();
 	}
 }
-Chat.POSITION = { BOTTOM_RIGHT: 'br' };
+Chat.POSITION = { TOP: { LEFT: 'tl', RIGHT: 'tr' }, BOTTOM: { LEFT: 'bl', RIGHT: 'br' } };
 Chat.OPTIONS  = 
 {
-	position: Chat.POSITION.BOTTOM_RIGHT,
+	position: Chat.POSITION.BOTTOM.RIGHT,
+	  margin: 20,
 	   color:
 	   {
 		   primary: '#7575FF'
@@ -530,15 +559,13 @@ Chat.OPTIONS  =
 Chat.TEMPLATE = 
 `
 <div class="frappe-chat">
-	<div class="dropup">
-		<div class="dropdown-menu dropdown-menu-right" style=
-		"
-			margin-bottom: 12px;
-				padding: 0    !important;
-				border: none !important
-		">
-			
-		</div>
+	<div class="dropdown-menu" style=
+	"
+		margin-bottom: 12px;
+			  padding: 0    !important;
+			   border: none !important
+	">
+		
 	</div>
 </div>
 `;
