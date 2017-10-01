@@ -1,12 +1,8 @@
-import FAB       from './FAB'
-import SearchBar from './SearchBar'
-import ChatBox   from './ChatBox'
+import Component from './Component'
+import chat      from './chat'
 
-const ui = 
-{
-	      FAB: FAB,
-	SearchBar: SearchBar,
-	  ChatBox: ChatBox,
-}
+const ui     = { }
+ui.Component = Component
+ui.chat      = chat
 
 export default ui
