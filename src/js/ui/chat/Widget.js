@@ -35,14 +35,26 @@ Widget.DropDown 		= class extends DropDown {
 		options         = Object.assign({ }, Widget.DropDown.OPTIONS, options)
 		super (options)
 
-		this.button     = new FAB()
+		this.button     = new FAB({
+			    icon: 'glyphicon glyphicon-comment',
+			toggable: true
+		})
 
 		this.init()
+	}
+
+	init ( ) {
+		super.init()
+
+		this.$element.css({
+			position: 'absolute',
+			  margin: 20
+		})
 	}
 }
 Widget.DropDown.OPTIONS = 
 {
-
+	position: Component.POSITION.BOTTOM.RIGHT
 }
 
 Widget.Page             = class extends Component {

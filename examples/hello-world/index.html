@@ -33,7 +33,8 @@
 			src="/static/js/frappe-chat.js"></script>
 		<script>
 			const chat = new frappe.Chat.Client('http://localhost:5000')
-			chat.mount('.container')
+			chat.mount()
+			
 			chat.on(frappe.Chat.Event.CONNECT, () => {
 				console.log('Client: A connection has occured.')
 			})
