@@ -1,6 +1,9 @@
 var frappe = (function () {
 'use strict';
 
+class FrappeError extends Error       { }
+class ImportError extends FrappeError { }
+
 class Component {
 	constructor (options) {
 		this.options = Object.assign({ }, Component.OPTIONS, options);
@@ -36,7 +39,16 @@ class Button extends Component {
 		options		  = Object.assign({ }, Button.OPTIONS, options);
 		super (options);
 
+		this.init();
+	}
+
+	init   ( ) {
 		this.$element = $(Button.TEMPLATE);
+		
+		if ( this.options.icon ) {
+			var $icon = $(`<i class="${this.options.icon}"/>`);
+			this.$element.append($icon);
+		}
 	}
 
 	render ( ) {
@@ -53,6 +65,87 @@ Button.TEMPLATE 	  =
 <button class="frappe-btn btn btn-default">
 
 </button>
+`;
+
+class Form extends Component {
+	constructor (options) {
+		options 	  = Object.assign({ }, Form.OPTIONS, options);
+		super (options);
+		
+		this.$element = $(Form.TEMPLATE);
+
+		this.init();
+	}
+
+	submit (callback) {
+		this.$element.submit((event) => {
+			if (!event.isDefaultPrevented() )
+				 event.preventDefault();
+				 
+			callback(event);
+		});
+	}
+
+	init   ( ) {
+		
+	}
+}
+Form.TEMPLATE = 
+`
+<form>
+	
+</form>
+`;
+
+class List extends Component {
+	constructor (options) {
+		options    = Object.assign({ }, List.OPTIONS, options);
+		super (options);
+	}
+}
+
+List.OPTIONS       = 
+{
+
+};
+List.TEMPLATE      = 
+`
+<div class="list-group">
+
+</div>
+`;
+
+List.Item          = class extends Component {
+	constructor (options) {
+		options    = Object.assign({ }, List.Item.OPTIONS, options);
+		super (options);
+	}
+};
+List.Item.OPTIONS  = 
+{
+
+};
+List.Item.TEMPLATE = 
+`
+<div class="list-group-item">
+
+</div>
+`;
+
+class Tab extends Component {
+	constructor (options) {
+		options = Object.assign({ }, Tab.OPTIONS, options);
+		super (options);
+	}
+}
+
+Tab.TEMPLATE = 
+`
+<div>
+	<div class="nav nav-pills">
+
+	</div>
+</div>
 `;
 
 class Panel extends Component {
@@ -112,7 +205,9 @@ class DropDown extends Component {
 		options  	  = Object.assign({ }, DropDown.OPTIONS, options);
 		super (options);
 
-		this.button   = new Button();
+		this.button   = new Button({
+			 icon: this.options.icon
+		});
 		this.panel    = new Panel({
 			title: this.options.title
 		});
@@ -206,24 +301,14 @@ class FAB extends Button {
 	}
 
 	init   ( ) {
+		super.init();
+	
 		this.$element.css({
 					width: this.options.size,
 				   height: this.options.size,
 		  'border-radius': '50%',
 		  	 'box-shadow': '0px 3px 6px 0px rgba(0,0,0,.25)'
 		});
-
-		if ( this.options.icon ) {
-			var $icon = $(`<i class="${this.options.icon}"/>`);
-			this.$element.append($icon);
-
-			if ( this.options.toggable ) {
-				this.click(() => {
-					$icon.toggleClass(this.options.icon);
-					$icon.toggleClass("glyphicon glyphicon-remove");
-				});
-			}
-		}
 
 		if ( this.options.color ) {
 			this.$element.css({
@@ -242,6 +327,24 @@ FAB.OPTIONS     =
 		size: 56,
 	    icon: 'glyphicon glyphicon-plus',
 	toggable: false
+};
+
+class EmojiPicker extends DropDown {
+	constructor (options) {
+		options      = Object.assign({ }, EmojiPicker.OPTIONS, options);
+		super (options);
+
+		this.init();
+	}
+
+	init ( ) {
+		super.init();
+	}
+}
+
+EmojiPicker.OPTIONS  = 
+{
+	icon: 'glyphicon glyphicon-thumbs-up'
 };
 
 class Widget extends Component {
@@ -314,12 +417,27 @@ Widget.Page.OPTIONS     =
 const chat  =  { };
 chat.Widget = Widget;
 
-const ui     = { };
-ui.Component = Component;
-ui.chat      = chat;
+const ui       = { };
+
+ui.Component   = Component;
+
+// standard components
+ui.Button      = Button;
+ui.Form        = Form;
+ui.List        = List;
+ui.Tab         = Tab;
+ui.Panel       = Panel;
+ui.DropDown    = DropDown;
+
+// complex  components
+ui.FAB         = FAB;
+ui.EmojiPicker = EmojiPicker;
+ui.chat        = chat;
 
 class Client {
 	constructor (url, options) {
+		// TODO - validate arguments
+
 		this.url    = url;
 		this.socket = io(url);
 		this.widget = new ui.chat.Widget();
@@ -330,12 +448,23 @@ class Client {
 	}
 
 	on    (event, callback) {
+		// TODO - validate arguments
+		// TODO - validate event
+		
 		this.socket.on(event, callback);
 	}
 }
 
+const NAMESPACE = 'frappe.chat.event';
+
 const Event     = { };
-Event.CONNECT   = `${Event.NAMESPACE}.connect`;
+Event.CONNECT   = `${NAMESPACE}.connect`;
+
+if ( typeof $  === 'undefined' )
+	throw new ImportError(`Frappe Chat requires jQuery. Kindly include jQuery before Frappe Chat`)
+
+if ( typeof io === 'undefined' )
+	throw new ImportError(`Frappe Chat requires the Socket.IO Client API. Visit https://socket.io to know more.`)
 
 const frappe = 
 {
@@ -343,7 +472,7 @@ const frappe =
 	{
 		Client: Client,
 		 Event: Event
-	}
+	}, ui: ui
 };
 
 return frappe;

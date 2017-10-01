@@ -7,7 +7,9 @@ class DropDown extends Component {
 		options  	  = Object.assign({ }, DropDown.OPTIONS, options)
 		super (options)
 
-		this.button   = new Button()
+		this.button   = new Button({
+			 icon: this.options.icon
+		})
 		this.panel    = new Panel({
 			title: this.options.title
 		})

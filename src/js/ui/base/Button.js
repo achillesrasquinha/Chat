@@ -5,7 +5,16 @@ class Button extends Component {
 		options		  = Object.assign({ }, Button.OPTIONS, options)
 		super (options)
 
+		this.init()
+	}
+
+	init   ( ) {
 		this.$element = $(Button.TEMPLATE)
+		
+		if ( this.options.icon ) {
+			var $icon = $(`<i class="${this.options.icon}"/>`)
+			this.$element.append($icon)
+		}
 	}
 
 	render ( ) {

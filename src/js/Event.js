@@ -1,5 +1,6 @@
+const NAMESPACE = 'frappe.chat.event'
+
 const Event     = { }
-const namespace = 'frappe.event'
-Event.CONNECT   = `${Event.NAMESPACE}.connect`
+Event.CONNECT   = `${NAMESPACE}.connect`
 
 export default Event
