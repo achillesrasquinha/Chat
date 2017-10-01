@@ -54,7 +54,8 @@ Widget.DropDown 		= class extends DropDown {
 }
 Widget.DropDown.OPTIONS = 
 {
-	position: Component.POSITION.BOTTOM.RIGHT
+	position: Component.POSITION.BOTTOM.RIGHT,
+	   title: 'Chat'
 }
 
 Widget.Page             = class extends Component {

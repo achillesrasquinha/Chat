@@ -55,12 +55,67 @@ Button.TEMPLATE 	  =
 </button>
 `;
 
+class Panel extends Component {
+	constructor (options) {
+		options = Object.assign({ }, Panel.OPTIONS, options);
+		super (options);
+
+		this.init();
+	}
+
+	init   ( ) {
+		this.$element = $(Panel.TEMPLATE);
+		
+		var $heading = this.$element.find('.panel-heading');
+		var $title   = this.$element.find('.panel-title');
+
+		if ( this.options.title ) {
+			$heading.find('.panel-title').html(this.options.title);
+		} else {
+			$heading.hide();
+		}
+
+		if ( this.options.color ) {
+			$heading.css({
+				'background-color': this.options.color.primary,
+						     color: '#FEFEFE' // TODO: Automatically detect
+			});
+		}
+	}
+
+	render ( ) {
+
+	}
+}
+
+Panel.OPTIONS  = 
+{
+
+};
+
+Panel.TEMPLATE = 
+`
+<div class="panel panel-default">
+	<div class="panel-heading">
+		<div class="panel-title">
+
+		</div>
+	</div>
+	<div class="panel-body">
+		
+	</div>
+</div>
+`;
+
 class DropDown extends Component {
 	constructor (options) {
 		options  	  = Object.assign({ }, DropDown.OPTIONS, options);
 		super (options);
 
 		this.button   = new Button();
+		this.panel    = new Panel({
+			title: this.options.title
+		});
 	}
 
 	init   ( ) {
@@ -68,6 +123,18 @@ class DropDown extends Component {
 		this.button.$element.attr('data-toggle', 'dropdown');
 
 		this.$element = $(DropDown.TEMPLATE);
+		var  $menu    = this.$element.find('.dropdown-menu');
+		this.panel.mount($menu);
+
+		$menu.css({
+			'padding': 0,
+			 'border': 0
+		});
+
+		this.panel.$element.css({
+			 'margin': 0
+		});
+
 		this.position(this.options.position);
 		
 		this.button.mount(this.$element);
@@ -89,11 +156,17 @@ class DropDown extends Component {
 		if ( tokens.includes('t') ) {
 			css.top    = 0;
 			this.$element.addClass('dropdown');
+			$menu.css({
+				   'margin-top': 8
+			});
 		}
 		if ( tokens.includes('b') ) {
 			css.bottom = 0;
 			this.$element.addClass('dropup');
-		} 
+			$menu.css({
+				'margin-bottom': 8
+			});
+		}
 
 		if ( tokens.includes('l') ) {
 			css.left   = 0;
@@ -119,7 +192,7 @@ DropDown.TEMPLATE =
 `
 <div class="frappe-dropdown">
 	<div class="dropdown-menu">
-
+		
 	</div>
 </div>
 `;
@@ -223,7 +296,8 @@ Widget.DropDown 		= class extends DropDown {
 };
 Widget.DropDown.OPTIONS = 
 {
-	position: Component.POSITION.BOTTOM.RIGHT
+	position: Component.POSITION.BOTTOM.RIGHT,
+	   title: 'Chat'
 };
 
 Widget.Page             = class extends Component {
