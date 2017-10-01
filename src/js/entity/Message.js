@@ -1,0 +1,6 @@
+class Message {
+	constructor ( ) {
+
+	}
+}
+
