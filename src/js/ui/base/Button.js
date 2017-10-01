@@ -1,19 +1,19 @@
 import Component from '../Component'
 
 class Button extends Component {
-	constructor (options) {
-		options		  = Object.assign({ }, Button.OPTIONS, options)
-		super (options)
+	constructor (...options) {
+		super (Button.OPTIONS, ...options)
 
-		this.init()
+		this.$element = $(Button.TEMPLATE)
 	}
 
 	init   ( ) {
-		this.$element = $(Button.TEMPLATE)
-		
+		super.init()
+
 		if ( this.options.icon ) {
-			var $icon = $(`<i class="${this.options.icon}"/>`)
-			this.$element.append($icon)
+			if ( !this.$element.find('i').length ) {
+				this.$element.append(`<i class="${this.options.icon}"/>`)
+			}
 		}
 	}
 

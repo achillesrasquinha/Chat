@@ -1,9 +1,8 @@
 import Component from '../Component'
 
 class Form extends Component {
-	constructor (options) {
-		options 	  = Object.assign({ }, Form.OPTIONS, options)
-		super (options)
+	constructor (...options) {
+		super (Form.OPTIONS, ...options)
 		
 		this.$element = $(Form.TEMPLATE)
 
@@ -22,6 +21,11 @@ class Form extends Component {
 	init   ( ) {
 		
 	}
+}
+
+Form.OPTIONS  = 
+{
+
 }
 Form.TEMPLATE = 
 `

@@ -3,9 +3,8 @@ import Button    from  './Button'
 import Panel     from  './Panel'
 
 class DropDown extends Component {
-	constructor (options) {
-		options  	  = Object.assign({ }, DropDown.OPTIONS, options)
-		super (options)
+	constructor (...options) {
+		super (DropDown.OPTIONS, ...options)
 
 		this.button   = new Button({
 			 icon: this.options.icon
@@ -16,6 +15,8 @@ class DropDown extends Component {
 	}
 
 	init   ( ) {
+		super.init()
+
 		this.button.$element.addClass('dropdown-toggle')
 		this.button.$element.attr('data-toggle', 'dropdown')
 
@@ -39,8 +40,8 @@ class DropDown extends Component {
 
 	position (which) {
 		const accepted = [
-			Component.POSITION.TOP.LEFT,  Component.POSITION.BOTTOM.LEFT,
-			Component.POSITION.TOP.RIGHT, Component.POSITION.BOTTOM.RIGHT
+			DropDown.POSITION.TOP.LEFT,  DropDown.POSITION.BOTTOM.LEFT,
+			DropDown.POSITION.TOP.RIGHT, DropDown.POSITION.BOTTOM.RIGHT
 		]
 
 		const tokens   = which.split('')
@@ -81,9 +82,10 @@ class DropDown extends Component {
 
 	}
 }
+DropDown.POSITION = Component.POSITION
 DropDown.OPTIONS  = 
 {
-	position: Component.POSITION.TOP.LEFT
+	position: DropDown.POSITION.TOP.LEFT
 }
 DropDown.TEMPLATE = 
 `

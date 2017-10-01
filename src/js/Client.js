@@ -2,11 +2,13 @@ import ui from './ui'
 
 class Client {
 	constructor (url, options) {
-		// TODO - validate arguments
+		this.options = Object.assign({ }, Client.OPTIONS, options)
 
-		this.url    = url
-		this.socket = io(url)
-		this.widget = new ui.chat.Widget()
+		this.url     = new URL(url)
+		this.socket  = io(url)
+		this.widget  = new ui.chat.Widget({
+			color: this.options.color
+		})
 	}
 
 	mount (selector = null) {
@@ -14,10 +16,15 @@ class Client {
 	}
 
 	on    (event, callback) {
-		// TODO - validate arguments
-		// TODO - validate event
-		
 		this.socket.on(event, callback)
+	}
+}
+Client.OPTIONS = 
+{
+	color: 
+	{
+		primary: '#3F51B5',
+		 accent: '#E91E63'
 	}
 }
 

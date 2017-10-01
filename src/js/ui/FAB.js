@@ -20,8 +20,17 @@ class FAB extends Button {
 
 		if ( this.options.color ) {
 			this.$element.css({
-				'background-color': this.options.color.primary,
-						     color: '#FEFEFE' // TODO: Automatically detect
+				'background-color': this.options.color.accent,
+						     color: '#FEFEFE'
+			})
+		}
+
+		if ( this.options.toggable ) {
+			const $icon = this.$element.find('i')
+
+			this.$element.click(() => {
+				$icon.toggleClass(`${this.options.icon}`)
+				$icon.toggleClass("glyphicon glyphicon-remove")
 			})
 		}
 	}

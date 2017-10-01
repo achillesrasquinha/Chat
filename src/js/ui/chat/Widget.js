@@ -3,14 +3,17 @@ import DropDown  from '../base/DropDown'
 import FAB       from '../FAB'
 
 class Widget extends Component {
-	constructor (options) {
-		options          = Object.assign({ }, Widget.OPTIONS, options)
-		super (options)
-
-		this.page        = new Widget.Page()
-		this.dropdown    = new Widget.DropDown()
+	constructor (...options) {
+		super (Widget.OPTIONS, ...options)
 
 		this.$element    = $(Widget.TEMPLATE)
+		this.dropdown    = new Widget.DropDown()
+
+		this.init()
+	}
+
+	init   ( ) {
+		super.init()
 		
 		this.dropdown.mount(this.$element)
 	}
@@ -31,9 +34,8 @@ Widget.TEMPLATE  		 =
 `
 
 Widget.DropDown 		= class extends DropDown {
-	constructor (options) {
-		options         = Object.assign({ }, Widget.DropDown.OPTIONS, options)
-		super (options)
+	constructor (...options) {
+		super (Widget.DropDown.OPTIONS, ...options)
 
 		this.button     = new FAB({
 			    icon: 'glyphicon glyphicon-comment',
@@ -55,18 +57,12 @@ Widget.DropDown 		= class extends DropDown {
 Widget.DropDown.OPTIONS = 
 {
 	position: Component.POSITION.BOTTOM.RIGHT,
-	   title: 'Chat'
-}
-
-Widget.Page             = class extends Component {
-	constructor (options) {
-		options         = Object.assign({ }, Widget.Page.OPTIONS, options)
-		super (options)
-	}
-}
-Widget.Page.OPTIONS     = 
-{
-
+	   title: 
+	   `
+		<div class="text-center">
+			<h5>Chat</h5>
+		</div>
+		`
 }
 
 export default Widget

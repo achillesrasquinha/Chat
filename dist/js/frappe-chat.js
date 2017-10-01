@@ -5,8 +5,16 @@ class FrappeError extends Error       { }
 class ImportError extends FrappeError { }
 
 class Component {
-	constructor (options) {
-		this.options = Object.assign({ }, Component.OPTIONS, options);
+	constructor (...options) {
+		this.options = Object.assign({ }, Component.OPTIONS, ...options);
+	}
+
+	init   ( ) {
+		
+	}
+
+	render ( ) {
+
 	}
 
 	click  (callback) {
@@ -20,7 +28,7 @@ class Component {
 		$(which).append(this.$element);
 	}
 }
-// constants
+
 Component.POSITION = 
 {
 	   TOP: { LEFT: 'tl', RIGHT: 'tr' },
@@ -30,24 +38,25 @@ Component.OPTIONS  =
 {
 	color: 
 	{
-		primary: '#7575FF'
+		primary: '#3F51B5',
+		 accent: '#E91E63'
 	}
 };
 
 class Button extends Component {
-	constructor (options) {
-		options		  = Object.assign({ }, Button.OPTIONS, options);
-		super (options);
+	constructor (...options) {
+		super (Button.OPTIONS, ...options);
 
-		this.init();
+		this.$element = $(Button.TEMPLATE);
 	}
 
 	init   ( ) {
-		this.$element = $(Button.TEMPLATE);
-		
+		super.init();
+
 		if ( this.options.icon ) {
-			var $icon = $(`<i class="${this.options.icon}"/>`);
-			this.$element.append($icon);
+			if ( !this.$element.find('i').length ) {
+				this.$element.append(`<i class="${this.options.icon}"/>`);
+			}
 		}
 	}
 
@@ -68,9 +77,8 @@ Button.TEMPLATE 	  =
 `;
 
 class Form extends Component {
-	constructor (options) {
-		options 	  = Object.assign({ }, Form.OPTIONS, options);
-		super (options);
+	constructor (...options) {
+		super (Form.OPTIONS, ...options);
 		
 		this.$element = $(Form.TEMPLATE);
 
@@ -90,6 +98,11 @@ class Form extends Component {
 		
 	}
 }
+
+Form.OPTIONS  = 
+{
+
+};
 Form.TEMPLATE = 
 `
 <form>
@@ -98,9 +111,8 @@ Form.TEMPLATE =
 `;
 
 class List extends Component {
-	constructor (options) {
-		options    = Object.assign({ }, List.OPTIONS, options);
-		super (options);
+	constructor (...options) {
+		super (List.OPTIONS, ...options);
 	}
 }
 
@@ -116,9 +128,8 @@ List.TEMPLATE      =
 `;
 
 List.Item          = class extends Component {
-	constructor (options) {
-		options    = Object.assign({ }, List.Item.OPTIONS, options);
-		super (options);
+	constructor (...options) {
+		super (List.Item.OPTIONS, ...options);
 	}
 };
 List.Item.OPTIONS  = 
@@ -133,9 +144,8 @@ List.Item.TEMPLATE =
 `;
 
 class Tab extends Component {
-	constructor (options) {
-		options = Object.assign({ }, Tab.OPTIONS, options);
-		super (options);
+	constructor (...options) {
+		super (Tab.OPTIONS, ...options);
 	}
 }
 
@@ -149,15 +159,16 @@ Tab.TEMPLATE =
 `;
 
 class Panel extends Component {
-	constructor (options) {
-		options = Object.assign({ }, Panel.OPTIONS, options);
-		super (options);
+	constructor (...options) {
+		super (Panel.OPTIONS, ...options);
+
+		this.$element = $(Panel.TEMPLATE);
 
 		this.init();
 	}
 
 	init   ( ) {
-		this.$element = $(Panel.TEMPLATE);
+		super.init();
 		
 		var $heading = this.$element.find('.panel-heading');
 		var $title   = this.$element.find('.panel-title');
@@ -171,7 +182,7 @@ class Panel extends Component {
 		if ( this.options.color ) {
 			$heading.css({
 				'background-color': this.options.color.primary,
-						     color: '#FEFEFE' // TODO: Automatically detect
+						     color: '#FEFEFE'
 			});
 		}
 	}
@@ -201,9 +212,8 @@ Panel.TEMPLATE =
 `;
 
 class DropDown extends Component {
-	constructor (options) {
-		options  	  = Object.assign({ }, DropDown.OPTIONS, options);
-		super (options);
+	constructor (...options) {
+		super (DropDown.OPTIONS, ...options);
 
 		this.button   = new Button({
 			 icon: this.options.icon
@@ -214,6 +224,8 @@ class DropDown extends Component {
 	}
 
 	init   ( ) {
+		super.init();
+
 		this.button.$element.addClass('dropdown-toggle');
 		this.button.$element.attr('data-toggle', 'dropdown');
 
@@ -237,8 +249,8 @@ class DropDown extends Component {
 
 	position (which) {
 		const accepted = [
-			Component.POSITION.TOP.LEFT,  Component.POSITION.BOTTOM.LEFT,
-			Component.POSITION.TOP.RIGHT, Component.POSITION.BOTTOM.RIGHT
+			DropDown.POSITION.TOP.LEFT,  DropDown.POSITION.BOTTOM.LEFT,
+			DropDown.POSITION.TOP.RIGHT, DropDown.POSITION.BOTTOM.RIGHT
 		];
 
 		const tokens   = which.split('');
@@ -279,9 +291,10 @@ class DropDown extends Component {
 
 	}
 }
+DropDown.POSITION = Component.POSITION;
 DropDown.OPTIONS  = 
 {
-	position: Component.POSITION.TOP.LEFT
+	position: DropDown.POSITION.TOP.LEFT
 };
 DropDown.TEMPLATE = 
 `
@@ -312,8 +325,17 @@ class FAB extends Button {
 
 		if ( this.options.color ) {
 			this.$element.css({
-				'background-color': this.options.color.primary,
-						     color: '#FEFEFE' // TODO: Automatically detect
+				'background-color': this.options.color.accent,
+						     color: '#FEFEFE'
+			});
+		}
+
+		if ( this.options.toggable ) {
+			const $icon = this.$element.find('i');
+
+			this.$element.click(() => {
+				$icon.toggleClass(`${this.options.icon}`);
+				$icon.toggleClass("glyphicon glyphicon-remove");
 			});
 		}
 	}
@@ -348,14 +370,17 @@ EmojiPicker.OPTIONS  =
 };
 
 class Widget extends Component {
-	constructor (options) {
-		options          = Object.assign({ }, Widget.OPTIONS, options);
-		super (options);
-
-		this.page        = new Widget.Page();
-		this.dropdown    = new Widget.DropDown();
+	constructor (...options) {
+		super (Widget.OPTIONS, ...options);
 
 		this.$element    = $(Widget.TEMPLATE);
+		this.dropdown    = new Widget.DropDown();
+
+		this.init();
+	}
+
+	init   ( ) {
+		super.init();
 		
 		this.dropdown.mount(this.$element);
 	}
@@ -376,9 +401,8 @@ Widget.TEMPLATE  		 =
 `;
 
 Widget.DropDown 		= class extends DropDown {
-	constructor (options) {
-		options         = Object.assign({ }, Widget.DropDown.OPTIONS, options);
-		super (options);
+	constructor (...options) {
+		super (Widget.DropDown.OPTIONS, ...options);
 
 		this.button     = new FAB({
 			    icon: 'glyphicon glyphicon-comment',
@@ -400,18 +424,12 @@ Widget.DropDown 		= class extends DropDown {
 Widget.DropDown.OPTIONS = 
 {
 	position: Component.POSITION.BOTTOM.RIGHT,
-	   title: 'Chat'
-};
-
-Widget.Page             = class extends Component {
-	constructor (options) {
-		options         = Object.assign({ }, Widget.Page.OPTIONS, options);
-		super (options);
-	}
-};
-Widget.Page.OPTIONS     = 
-{
-
+	   title: 
+	   `
+		<div class="text-center">
+			<h5>Chat</h5>
+		</div>
+		`
 };
 
 const chat  =  { };
@@ -436,11 +454,13 @@ ui.chat        = chat;
 
 class Client {
 	constructor (url, options) {
-		// TODO - validate arguments
+		this.options = Object.assign({ }, Client.OPTIONS, options);
 
-		this.url    = url;
-		this.socket = io(url);
-		this.widget = new ui.chat.Widget();
+		this.url     = new URL(url);
+		this.socket  = io(url);
+		this.widget  = new ui.chat.Widget({
+			color: this.options.color
+		});
 	}
 
 	mount (selector = null) {
@@ -448,12 +468,17 @@ class Client {
 	}
 
 	on    (event, callback) {
-		// TODO - validate arguments
-		// TODO - validate event
-		
 		this.socket.on(event, callback);
 	}
 }
+Client.OPTIONS = 
+{
+	color: 
+	{
+		primary: '#3F51B5',
+		 accent: '#E91E63'
+	}
+};
 
 const NAMESPACE = 'frappe.chat.event';
 
@@ -461,7 +486,7 @@ const Event     = { };
 Event.CONNECT   = `${NAMESPACE}.connect`;
 
 if ( typeof $  === 'undefined' )
-	throw new ImportError(`Frappe Chat requires jQuery. Kindly include jQuery before Frappe Chat`)
+	throw new ImportError(`Frappe Chat requires jQuery. Kindly include jQuery before Frappe Chat.`)
 
 if ( typeof io === 'undefined' )
 	throw new ImportError(`Frappe Chat requires the Socket.IO Client API. Visit https://socket.io to know more.`)

@@ -1,15 +1,16 @@
 import Component from '../Component'
 
 class Panel extends Component {
-	constructor (options) {
-		options = Object.assign({ }, Panel.OPTIONS, options)
-		super (options)
+	constructor (...options) {
+		super (Panel.OPTIONS, ...options)
+
+		this.$element = $(Panel.TEMPLATE)
 
 		this.init()
 	}
 
 	init   ( ) {
-		this.$element = $(Panel.TEMPLATE)
+		super.init()
 		
 		var $heading = this.$element.find('.panel-heading')
 		var $title   = this.$element.find('.panel-title')
@@ -23,7 +24,7 @@ class Panel extends Component {
 		if ( this.options.color ) {
 			$heading.css({
 				'background-color': this.options.color.primary,
-						     color: '#FEFEFE' // TODO: Automatically detect
+						     color: '#FEFEFE'
 			})
 		}
 	}

@@ -39,7 +39,9 @@
 		<script
 			src="/static/js/frappe-chat.js"></script>
 		<script>
-			const chat  = new frappe.Chat.Client('http://localhost:5000')
+			const chat  = new frappe.Chat.Client('http://localhost:5000', {
+				color: { primary: '#3F51B5', accent: '#E91E63' }
+			})
 			chat.mount()
 			
 			chat.on(frappe.Chat.Event.CONNECT, () => {

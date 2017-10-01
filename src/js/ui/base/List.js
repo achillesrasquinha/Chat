@@ -1,9 +1,8 @@
 import Component from '../Component' 
 
 class List extends Component {
-	constructor (options) {
-		options    = Object.assign({ }, List.OPTIONS, options)
-		super (options)
+	constructor (...options) {
+		super (List.OPTIONS, ...options)
 	}
 }
 
@@ -19,9 +18,8 @@ List.TEMPLATE      =
 `
 
 List.Item          = class extends Component {
-	constructor (options) {
-		options    = Object.assign({ }, List.Item.OPTIONS, options)
-		super (options)
+	constructor (...options) {
+		super (List.Item.OPTIONS, ...options)
 	}
 }
 List.Item.OPTIONS  = 

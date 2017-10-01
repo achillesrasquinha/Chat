@@ -1,6 +1,14 @@
 class Component {
-	constructor (options) {
-		this.options = Object.assign({ }, Component.OPTIONS, options)
+	constructor (...options) {
+		this.options = Object.assign({ }, Component.OPTIONS, ...options)
+	}
+
+	init   ( ) {
+		
+	}
+
+	render ( ) {
+
 	}
 
 	click  (callback) {
@@ -14,7 +22,7 @@ class Component {
 		$(which).append(this.$element)
 	}
 }
-// constants
+
 Component.POSITION = 
 {
 	   TOP: { LEFT: 'tl', RIGHT: 'tr' },
@@ -24,7 +32,8 @@ Component.OPTIONS  =
 {
 	color: 
 	{
-		primary: '#7575FF'
+		primary: '#3F51B5',
+		 accent: '#E91E63'
 	}
 }
 

@@ -1,9 +1,8 @@
 import Component from '../Component'
 
 class Tab extends Component {
-	constructor (options) {
-		options = Object.assign({ }, Tab.OPTIONS, options)
-		super (options)
+	constructor (...options) {
+		super (Tab.OPTIONS, ...options)
 	}
 }
 
