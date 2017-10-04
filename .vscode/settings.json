@@ -1,3 +1,4 @@
 {
-	"editor.fontFamily": "Consolas, Fira Code"
+	"editor.fontFamily": "Consolas, Fira Code",
+	"python.linting.pylintEnabled": false
 }

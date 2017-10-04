@@ -439,7 +439,6 @@ const ui       = { };
 
 ui.Component   = Component;
 
-// standard components
 ui.Button      = Button;
 ui.Form        = Form;
 ui.List        = List;
@@ -447,7 +446,6 @@ ui.Tab         = Tab;
 ui.Panel       = Panel;
 ui.DropDown    = DropDown;
 
-// complex  components
 ui.FAB         = FAB;
 ui.EmojiPicker = EmojiPicker;
 ui.chat        = chat;
