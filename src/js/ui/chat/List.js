@@ -7,7 +7,7 @@ class ChatList extends List {
 }
 ChatList.OPTIONS      = 
 {
-
+	
 }
 
 ChatList.Item         = class extends List.Item {

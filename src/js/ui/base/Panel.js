@@ -13,7 +13,6 @@ class Panel extends Component {
 		super.init()
 		
 		var $heading = this.$element.find('.panel-heading')
-		var $title   = this.$element.find('.panel-title')
 
 		if ( this.options.title ) {
 			$heading.find('.panel-title').html(this.options.title)
@@ -30,7 +29,7 @@ class Panel extends Component {
 	}
 
 	render ( ) {
-
+		
 	}
 }
 
@@ -44,7 +43,7 @@ Panel.TEMPLATE =
 <div class="panel panel-default">
 	<div class="panel-heading">
 		<div class="panel-title">
-
+			
 		</div>
 	</div>
 	<div class="panel-body">

@@ -1,9 +1,8 @@
 import Button from './base/Button'
 
 class FAB extends Button {
-	constructor (options) {
-		options = Object.assign({ }, FAB.OPTIONS, options)
-		super (options)
+	constructor (...options) {
+		super (FAB.OPTIONS, ...options)
 
 		this.init()
 	}

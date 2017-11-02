@@ -29,7 +29,7 @@ Button.OPTIONS		  =
 Button.TEMPLATE 	  = 
 `
 <button class="frappe-btn btn btn-default">
-
+	
 </button>
 `
 

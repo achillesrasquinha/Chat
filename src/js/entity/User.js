@@ -1,6 +1,6 @@
-class User {
-	constructor ( ) {
-
+class User extends Entity {
+	constructor (...options) {
+		
 	}
 }
 

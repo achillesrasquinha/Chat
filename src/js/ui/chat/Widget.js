@@ -1,5 +1,6 @@
 import Component from '../Component'
 import DropDown  from '../base/DropDown'
+import Page      from '../base/Page'
 import FAB       from '../FAB'
 
 class Widget extends Component {
@@ -7,7 +8,9 @@ class Widget extends Component {
 		super (Widget.OPTIONS, ...options)
 
 		this.$element    = $(Widget.TEMPLATE)
-		this.dropdown    = new Widget.DropDown()
+		this.dropdown    = new Widget.DropDown({
+			color: this.options.color
+		})
 
 		this.init()
 	}
@@ -22,9 +25,13 @@ class Widget extends Component {
 		
 	}
 }
+Widget.LAYOUT            = 
+{
+	COLLAPSIBLE: 'collapsible'
+}
 Widget.OPTIONS   		 =
 {
-	
+	     layout: Widget.LAYOUT.COLLAPSIBLE
 }
 Widget.TEMPLATE  		 = 
 `
@@ -56,13 +63,23 @@ Widget.DropDown 		= class extends DropDown {
 }
 Widget.DropDown.OPTIONS = 
 {
-	position: Component.POSITION.BOTTOM.RIGHT,
+	position: DropDown.POSITION.BOTTOM.RIGHT,
 	   title: 
 	   `
 		<div class="text-center">
 			<h5>Chat</h5>
 		</div>
 		`
+}
+
+Widget.Page             = class extends Page {
+	constructor (...options) {
+		super (Widget.Page.OPTIONS, ...options)
+	}
+}
+Widget.Page.OPTIONS     = 
+{
+
 }
 
 export default Widget

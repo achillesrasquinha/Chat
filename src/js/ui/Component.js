@@ -32,8 +32,8 @@ Component.OPTIONS  =
 {
 	color: 
 	{
-		primary: '#3F51B5',
-		 accent: '#E91E63'
+		primary: '#9B59B6',
+		 accent: '#9B59B6'
 	}
 }
 

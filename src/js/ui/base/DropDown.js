@@ -6,11 +6,13 @@ class DropDown extends Component {
 	constructor (...options) {
 		super (DropDown.OPTIONS, ...options)
 
+		this.$element = $(DropDown.TEMPLATE)
 		this.button   = new Button({
 			 icon: this.options.icon
 		})
 		this.panel    = new Panel({
-			title: this.options.title
+			title: this.options.title,
+			color: this.options.color
 		})
 	}
 
@@ -20,7 +22,6 @@ class DropDown extends Component {
 		this.button.$element.addClass('dropdown-toggle')
 		this.button.$element.attr('data-toggle', 'dropdown')
 
-		this.$element = $(DropDown.TEMPLATE)
 		var  $menu    = this.$element.find('.dropdown-menu')
 		this.panel.mount($menu)
 
@@ -76,6 +77,12 @@ class DropDown extends Component {
 		}
 
 		this.$element.css(css)
+	}
+
+	isOpen ( ) {
+		const isOpen =  this.$element.hasClass('open')
+
+		return isOpen
 	}
 
 	render ( ) {

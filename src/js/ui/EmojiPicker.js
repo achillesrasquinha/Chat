@@ -1,9 +1,8 @@
 import DropDown from './base/DropDown'
 
 class EmojiPicker extends DropDown {
-	constructor (options) {
-		options      = Object.assign({ }, EmojiPicker.OPTIONS, options)
-		super (options)
+	constructor (...options) {
+		super (EmojiPicker.OPTIONS, ...options)
 
 		this.init()
 	}

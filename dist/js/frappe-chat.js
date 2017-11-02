@@ -38,8 +38,8 @@ Component.OPTIONS  =
 {
 	color: 
 	{
-		primary: '#3F51B5',
-		 accent: '#E91E63'
+		primary: '#9B59B6',
+		 accent: '#9B59B6'
 	}
 };
 
@@ -72,7 +72,7 @@ Button.OPTIONS		  =
 Button.TEMPLATE 	  = 
 `
 <button class="frappe-btn btn btn-default">
-
+	
 </button>
 `;
 
@@ -171,7 +171,6 @@ class Panel extends Component {
 		super.init();
 		
 		var $heading = this.$element.find('.panel-heading');
-		var $title   = this.$element.find('.panel-title');
 
 		if ( this.options.title ) {
 			$heading.find('.panel-title').html(this.options.title);
@@ -188,7 +187,7 @@ class Panel extends Component {
 	}
 
 	render ( ) {
-
+		
 	}
 }
 
@@ -202,7 +201,7 @@ Panel.TEMPLATE =
 <div class="panel panel-default">
 	<div class="panel-heading">
 		<div class="panel-title">
-
+			
 		</div>
 	</div>
 	<div class="panel-body">
@@ -215,11 +214,13 @@ class DropDown extends Component {
 	constructor (...options) {
 		super (DropDown.OPTIONS, ...options);
 
+		this.$element = $(DropDown.TEMPLATE);
 		this.button   = new Button({
 			 icon: this.options.icon
 		});
 		this.panel    = new Panel({
-			title: this.options.title
+			title: this.options.title,
+			color: this.options.color
 		});
 	}
 
@@ -229,7 +230,6 @@ class DropDown extends Component {
 		this.button.$element.addClass('dropdown-toggle');
 		this.button.$element.attr('data-toggle', 'dropdown');
 
-		this.$element = $(DropDown.TEMPLATE);
 		var  $menu    = this.$element.find('.dropdown-menu');
 		this.panel.mount($menu);
 
@@ -287,6 +287,12 @@ class DropDown extends Component {
 		this.$element.css(css);
 	}
 
+	isOpen ( ) {
+		const isOpen =  this.$element.hasClass('open');
+
+		return isOpen
+	}
+
 	render ( ) {
 
 	}
@@ -306,9 +312,8 @@ DropDown.TEMPLATE =
 `;
 
 class FAB extends Button {
-	constructor (options) {
-		options = Object.assign({ }, FAB.OPTIONS, options);
-		super (options);
+	constructor (...options) {
+		super (FAB.OPTIONS, ...options);
 
 		this.init();
 	}
@@ -352,9 +357,8 @@ FAB.OPTIONS     =
 };
 
 class EmojiPicker extends DropDown {
-	constructor (options) {
-		options      = Object.assign({ }, EmojiPicker.OPTIONS, options);
-		super (options);
+	constructor (...options) {
+		super (EmojiPicker.OPTIONS, ...options);
 
 		this.init();
 	}
@@ -369,12 +373,43 @@ EmojiPicker.OPTIONS  =
 	icon: 'glyphicon glyphicon-thumbs-up'
 };
 
+class Page extends Component {
+	constructor (...options) {
+		super (Page.OPTIONS, ...options);
+
+		this.$element = $(Page.TEMPLATE);
+
+		this.init();
+	}
+
+	init ( ) {
+		super.init();
+
+		const className = `container${this.options.fluid ? '-fluid' : ''}`;
+		this.$element.addClass(className);
+	}
+}
+
+Page.OPTIONS  = 
+{
+	fluid: false
+};
+
+Page.TEMPLATE = 
+`
+<div>
+
+</div>
+`;
+
 class Widget extends Component {
 	constructor (...options) {
 		super (Widget.OPTIONS, ...options);
 
 		this.$element    = $(Widget.TEMPLATE);
-		this.dropdown    = new Widget.DropDown();
+		this.dropdown    = new Widget.DropDown({
+			color: this.options.color
+		});
 
 		this.init();
 	}
@@ -389,9 +424,13 @@ class Widget extends Component {
 		
 	}
 }
+Widget.LAYOUT            = 
+{
+	COLLAPSIBLE: 'collapsible'
+};
 Widget.OPTIONS   		 =
 {
-	
+	     layout: Widget.LAYOUT.COLLAPSIBLE
 };
 Widget.TEMPLATE  		 = 
 `
@@ -423,13 +462,23 @@ Widget.DropDown 		= class extends DropDown {
 };
 Widget.DropDown.OPTIONS = 
 {
-	position: Component.POSITION.BOTTOM.RIGHT,
+	position: DropDown.POSITION.BOTTOM.RIGHT,
 	   title: 
 	   `
 		<div class="text-center">
 			<h5>Chat</h5>
 		</div>
 		`
+};
+
+Widget.Page             = class extends Page {
+	constructor (...options) {
+		super (Widget.Page.OPTIONS, ...options);
+	}
+};
+Widget.Page.OPTIONS     = 
+{
+
 };
 
 const chat  =  { };
@@ -451,13 +500,14 @@ ui.EmojiPicker = EmojiPicker;
 ui.chat        = chat;
 
 class Client {
-	constructor (url, options) {
+	constructor (url = null, options = { }) {
+		this.url     = url;
 		this.options = Object.assign({ }, Client.OPTIONS, options);
 
-		this.url     = new URL(url);
 		this.socket  = io(url);
 		this.widget  = new ui.chat.Widget({
-			color: this.options.color
+			layout: this.options.layout,
+			 color: this.options.color
 		});
 	}
 
@@ -471,11 +521,12 @@ class Client {
 }
 Client.OPTIONS = 
 {
-	color: 
-	{
-		primary: '#3F51B5',
-		 accent: '#E91E63'
-	}
+	layout: ui.chat.Widget.LAYOUT.COLLAPSIBLE,
+	 color: 
+	 {
+		primary: '#9B59B6',
+		 accent: '#9B59B6'
+	 }
 };
 
 const NAMESPACE = 'frappe.chat.event';

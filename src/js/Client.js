@@ -1,13 +1,14 @@
 import ui from './ui'
 
 class Client {
-	constructor (url, options) {
+	constructor (url = null, options = { }) {
+		this.url     = url
 		this.options = Object.assign({ }, Client.OPTIONS, options)
 
-		this.url     = new URL(url)
 		this.socket  = io(url)
 		this.widget  = new ui.chat.Widget({
-			color: this.options.color
+			layout: this.options.layout,
+			 color: this.options.color
 		})
 	}
 
@@ -21,11 +22,12 @@ class Client {
 }
 Client.OPTIONS = 
 {
-	color: 
-	{
-		primary: '#3F51B5',
-		 accent: '#E91E63'
-	}
+	layout: ui.chat.Widget.LAYOUT.COLLAPSIBLE,
+	 color: 
+	 {
+		primary: '#9B59B6',
+		 accent: '#9B59B6'
+	 }
 }
 
 export default Client

@@ -4,6 +4,9 @@ NODE 	  = babel-node
 BASEDIR   = $(realpath .)
 SAMPLEIDR = $(BASEDIR)/examples
 
+install:
+	npm install $(BASEDIR)
+
 build:
 	npm run build
 
