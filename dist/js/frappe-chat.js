@@ -29,17 +29,17 @@ class Component {
 	}
 }
 
-Component.POSITION = 
+Component.POSITION =
 {
 	   TOP: { LEFT: 'tl', RIGHT: 'tr' },
 	BOTTOM: { LEFT: 'bl', RIGHT: 'br' }
 };
-Component.OPTIONS  = 
+Component.OPTIONS  =
 {
 	color: 
 	{
-		primary: '#9B59B6',
-		 accent: '#9B59B6'
+		primary: '#7575FF',
+		 accent: '#7575FF'
 	}
 };
 
@@ -238,6 +238,10 @@ class DropDown extends Component {
 			 'border': 0
 		});
 
+		$menu.click((e) => {
+			e.stopPropagation();
+		});
+
 		this.panel.$element.css({
 			 'margin': 0
 		});
@@ -348,7 +352,50 @@ class FAB extends Button {
 	render ( ) {
 		
 	}
+
+	position (which) {
+		const accepted = [
+			FAB.POSITION.TOP.LEFT,  FAB.POSITION.BOTTOM.LEFT,
+			FAB.POSITION.TOP.RIGHT, FAB.POSITION.BOTTOM.RIGHT
+		];
+
+		const tokens   = which.split('');
+		if ( !accepted.includes(which) ) 
+			throw TypeError(`Expected ${accepted}, got ${which} instead for value position.`)
+
+		const css      = { position: 'absolute' };
+		
+		if ( tokens.includes('t') ) {
+			css.top    = 0;
+			this.$element.css({
+				   'margin-top': 8
+			});
+		}
+		if ( tokens.includes('b') ) {
+			css.bottom = 0;
+			this.$element.css({
+				'margin-bottom': 8
+			});
+		}
+
+		if ( tokens.includes('l') ) {
+			css.left   = 0;
+			this.$element.css({
+				  'margin-left': 8
+			});
+		}
+		if ( tokens.includes('r') ) {
+			css.right  = 0;
+			this.$element.css({
+				 'margin-right': 8
+			});
+		}
+
+		this.$element.css(css);
+	}
 }
+
+FAB.POSITION    = Component.POSITION;
 FAB.OPTIONS     = 
 {
 		size: 56,
@@ -447,6 +494,11 @@ Widget.DropDown 		= class extends DropDown {
 				icon: 'glyphicon glyphicon-comment',
 			toggable: true
 		});
+		this.fab        = new FAB({
+				size: 48,
+				icon: 'glyphicon glyphicon-pencil'
+		});
+		this.fab.position(FAB.POSITION.BOTTOM.RIGHT);
 
 		this.init();
 	}
@@ -458,6 +510,8 @@ Widget.DropDown 		= class extends DropDown {
 			position: 'absolute',
 			  margin: 20
 		});
+
+		this.panel.$element.find('.panel-body').append(this.fab.$element);
 	}
 };
 Widget.DropDown.OPTIONS =
@@ -520,13 +574,14 @@ class Client {
 		this.socket.on(event, callback);
 	}
 }
+Client.LAYOUT  = ui.chat.Widget.LAYOUT;
 Client.OPTIONS = 
 {
-	layout: ui.chat.Widget.LAYOUT.COLLAPSIBLE,
+	layout: Client.LAYOUT.COLLAPSIBLE,
 	 color: 
 	 {
-		primary: '#9B59B6',
-		 accent: '#9B59B6'
+		primary: '#7575FF',
+		 accent: '#7575FF'
 	 }
 };
 
@@ -536,10 +591,10 @@ const Event     = { };
 Event.CONNECT   = `${NAMESPACE}.connect`;
 
 if ( typeof $  === 'undefined' )
-	throw new ImportError(`Frappe Chat requires jQuery. Kindly include jQuery before Frappe Chat.`)
+	throw new ImportError(`Frappé Chat requires jQuery. Kindly include jQuery before using Frappé Chat.`)
 
 if ( typeof io === 'undefined' )
-	throw new ImportError(`Frappe Chat requires the Socket.IO Client API. Visit https://socket.io to know more.`)
+	throw new ImportError(`Frappé Chat requires the Socket.IO Client API. Visit https://socket.io to know more.`)
 
 const frappe = 
 {

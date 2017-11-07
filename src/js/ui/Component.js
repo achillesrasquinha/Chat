@@ -23,17 +23,17 @@ class Component {
 	}
 }
 
-Component.POSITION = 
+Component.POSITION =
 {
 	   TOP: { LEFT: 'tl', RIGHT: 'tr' },
 	BOTTOM: { LEFT: 'bl', RIGHT: 'br' }
 }
-Component.OPTIONS  = 
+Component.OPTIONS  =
 {
 	color: 
 	{
-		primary: '#9B59B6',
-		 accent: '#9B59B6'
+		primary: '#7575FF',
+		 accent: '#7575FF'
 	}
 }
 

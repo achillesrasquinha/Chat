@@ -4,6 +4,10 @@ NODE 	  = babel-node
 BASEDIR   = $(realpath .)
 SAMPLEIDR = $(BASEDIR)/examples
 
+NODEBIN   = $(BASEDIR)/node_modules/.bin
+
+QUNIT     = $(NODEBIN)/qunit
+
 install:
 	npm install $(BASEDIR)
 
@@ -18,3 +22,9 @@ clean:
 
 run:
 	make build & make sample
+
+test:
+	$(QUNIT)
+
+publish:
+	

@@ -30,6 +30,10 @@ class DropDown extends Component {
 			 'border': 0
 		})
 
+		$menu.click((e) => {
+			e.stopPropagation()
+		})
+
 		this.panel.$element.css({
 			 'margin': 0
 		})

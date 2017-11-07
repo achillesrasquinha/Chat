@@ -48,6 +48,11 @@ Widget.DropDown 		= class extends DropDown {
 				icon: 'glyphicon glyphicon-comment',
 			toggable: true
 		})
+		this.fab        = new FAB({
+				size: 48,
+				icon: 'glyphicon glyphicon-pencil'
+		})
+		this.fab.position(FAB.POSITION.BOTTOM.RIGHT)
 
 		this.init()
 	}
@@ -59,6 +64,8 @@ Widget.DropDown 		= class extends DropDown {
 			position: 'absolute',
 			  margin: 20
 		})
+
+		this.panel.$element.find('.panel-body').append(this.fab.$element)
 	}
 }
 Widget.DropDown.OPTIONS =

@@ -21,13 +21,14 @@ class Client {
 		this.socket.on(event, callback)
 	}
 }
+Client.LAYOUT  = ui.chat.Widget.LAYOUT
 Client.OPTIONS = 
 {
-	layout: ui.chat.Widget.LAYOUT.COLLAPSIBLE,
+	layout: Client.LAYOUT.COLLAPSIBLE,
 	 color: 
 	 {
-		primary: '#9B59B6',
-		 accent: '#9B59B6'
+		primary: '#7575FF',
+		 accent: '#7575FF'
 	 }
 }
 

@@ -17,7 +17,6 @@
 
 #### Quickstart
 
-
 ```js
 var chat = frappe.Chat.Client(`http://${YOUR_HOSTNAME}:${PORT}`)
 chat.mount()
