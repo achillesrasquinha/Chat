@@ -27,6 +27,8 @@
     "eslint": "^4.8.0",
     "eslint-config-airbnb": "^15.1.0",
     "express": "^4.15.5",
+    "node-sass": "^4.6.0",
+    "phantomjs": "^2.1.7",
     "qunit": "^2.4.1",
     "rollup": "^0.50.0",
     "rollup-plugin-node-resolve": "^3.0.0",

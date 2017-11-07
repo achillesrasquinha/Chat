@@ -5,7 +5,7 @@
 	</a>
 	<h1>Frappé Chat</h1>
 	<p class="center">
-		Minimalistic, modern and extensible chat Client + UI Library.
+		Minimalistic, modern and extensible chat Client + UI Library for the web.
 	</p>
 </div>
 

@@ -2,11 +2,17 @@
 
 NODE 	  = babel-node
 BASEDIR   = $(realpath .)
+SRCDIR    = $(BASEDIR)/src
+DSTDIR    = $(BASEDIR)/dist
+
 SAMPLEIDR = $(BASEDIR)/examples
 
-NODEBIN   = $(BASEDIR)/node_modules/.bin
+NODEMOD   = $(BASEDIR)/node_modules
+NODEBIN   = $(NODEMOD)/.bin
 
-QUNIT     = $(NODEBIN)/qunit
+phantomjs = $(NODEBIN)/phantomjs
+qunit     = $(NODEBIN)/qunit
+QUNITRUN  = $(NODEMOD)/qunit-phantomjs-runner
 
 install:
 	npm install $(BASEDIR)
@@ -24,7 +30,7 @@ run:
 	make build & make sample
 
 test:
-	$(QUNIT)
+	$(phantomjs) $(QUNITRUN)/runner.js $(SRCDIR)/js/test/index.html
 
 publish:
 	
