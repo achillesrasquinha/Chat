@@ -406,8 +406,8 @@ class Widget extends Component {
 	constructor (...options) {
 		super (Widget.OPTIONS, ...options);
 
-		this.$element    = $(Widget.TEMPLATE);
-		this.dropdown    = new Widget.DropDown({
+		this.$element   = $(Widget.TEMPLATE);
+		this.dropdown   = new Widget.DropDown({
 			color: this.options.color
 		});
 
@@ -424,15 +424,15 @@ class Widget extends Component {
 		
 	}
 }
-Widget.LAYOUT            = 
+Widget.LAYOUT           =
 {
 	COLLAPSIBLE: 'collapsible'
 };
-Widget.OPTIONS   		 =
+Widget.OPTIONS   		=
 {
-	     layout: Widget.LAYOUT.COLLAPSIBLE
+		 layout: Widget.LAYOUT.COLLAPSIBLE
 };
-Widget.TEMPLATE  		 = 
+Widget.TEMPLATE  		= 
 `
 <div class="frappe-chat">
 	
@@ -444,7 +444,7 @@ Widget.DropDown 		= class extends DropDown {
 		super (Widget.DropDown.OPTIONS, ...options);
 
 		this.button     = new FAB({
-			    icon: 'glyphicon glyphicon-comment',
+				icon: 'glyphicon glyphicon-comment',
 			toggable: true
 		});
 
@@ -460,7 +460,7 @@ Widget.DropDown 		= class extends DropDown {
 		});
 	}
 };
-Widget.DropDown.OPTIONS = 
+Widget.DropDown.OPTIONS =
 {
 	position: DropDown.POSITION.BOTTOM.RIGHT,
 	   title: 
@@ -478,7 +478,7 @@ Widget.Page             = class extends Page {
 };
 Widget.Page.OPTIONS     = 
 {
-
+	
 };
 
 const chat  =  { };
@@ -505,6 +505,7 @@ class Client {
 		this.options = Object.assign({ }, Client.OPTIONS, options);
 
 		this.socket  = io(url);
+		
 		this.widget  = new ui.chat.Widget({
 			layout: this.options.layout,
 			 color: this.options.color

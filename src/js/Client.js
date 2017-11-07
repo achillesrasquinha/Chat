@@ -6,6 +6,7 @@ class Client {
 		this.options = Object.assign({ }, Client.OPTIONS, options)
 
 		this.socket  = io(url)
+		
 		this.widget  = new ui.chat.Widget({
 			layout: this.options.layout,
 			 color: this.options.color
