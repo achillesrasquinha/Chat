@@ -1,7 +1,7 @@
 <div align="center">
 	<a href="https://achillesrasquinha.github.io/chat">
 		<!-- TODO: logo -->
-		<img src="" height="200">
+		<img src=".github.com/logo.png" height="200"/>
 	</a>
 	<h1>Frappé Chat</h1>
 	<p class="center">
