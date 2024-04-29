@@ -4,7 +4,6 @@
 /* eslint semi: "never" */
 // Fuck semicolons - https://mislav.net/2010/05/semicolons
 
-import Logger from './log'
 import datetime from './util/datetime'
 
 import Fuse   from 'fuse.js'
@@ -23,10 +22,12 @@ import $ from 'jquery'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import './App.scss'
 
+import Logger from './log'
+
 const Chat  = window.Chat = {}
 Chat.logger = Logger.get('Chat', Logger.ERROR)
 
-const __     = s => s;
+const __  = s => s;
 
 Chat.provide = (key, value = {}) => {
 	const keys   = key.split(".")
@@ -48,6 +49,45 @@ Chat.provide = (key, value = {}) => {
 		lvl = lvl[key]
 	}
 };
+
+Chat.call = (method, data = null, cb = null) => {
+	const MOCK = {
+		"Chat.chat.website.token": "TOKEN",
+		"Chat.chat.doctype.chat_profile.chat_profile.create": {
+			
+		},
+		"Chat.chat.doctype.chat_room.chat_room.create": {
+			"name": "Guest Room"
+		},
+		"Chat.chat.doctype.chat_room.chat_room.history": [
+
+		],
+		"Chat.chat.doctype.chat_message.chat_message.send": {
+
+		}
+	}
+
+	Chat.logger.info(`Calling Method: ${method}: ${JSON.stringify(data)}`);
+
+	if ( method in MOCK ) {
+		const response = MOCK[method]
+
+		if ( cb ) {
+			cb({ message: response });
+		}
+	} else {
+		throw new Error(`No response found for method ${method}.`);
+	}
+}
+
+Chat.provide('realtime');
+Chat.realtime.publish = (channel, data) => {
+	Chat.logger.info(`Publishing to Channel '${channel}': ${JSON.stringify(data)}`);
+}
+
+Chat.provide('user');
+Chat.user.full_name = user => user;
+Chat.user.image     = user => '';
 
 // Chat.quick_edit
 Chat.quick_edit      = (doctype, docname, fn) => {
@@ -844,7 +884,7 @@ Chat.chat.emoji  = function (fn) {
 			resolve(Chat.chat.emojis)
 		}
 		else
-			$.get('https://cdn.rawgit.com/Chat/emoji/master/emoji', (data) => {
+			$.get('https://cdn.rawgit.com/frappe/emoji/master/emoji', (data) => {
 				Chat.chat.emojis = JSON.parse(data)
 
 				if ( fn )
@@ -1047,7 +1087,7 @@ Chat.components.Avatar
 class extends Component {
 	render ( ) {
 		const { props } = this
-		const abbr      = props.abbr || props.title.substr(0, 1)
+		const abbr      = props.abbr || (props.title || "").substr(0, 1)
 		const size      = Chat.components.Avatar.SIZE[props.size] || Chat.components.Avatar.SIZE.medium
 
 		return (
@@ -2471,6 +2511,8 @@ Chat.chat.render = (render = true, force = false) =>
 {
 	Chat.logger.info(`${render ? "Enable" : "Disable"} Chat for User.`)
 
+	console.log(Chat);
+
 	const desk = 'desk' in Chat
 	if ( desk ) {
 		// With the assumption, that there's only one navbar.
@@ -2512,8 +2554,12 @@ Chat.chat.render = (render = true, force = false) =>
 
 				const setup_room = (token) =>
 				{
+					Chat.logger.info(`Setting Up Room...`);
+
 					return new Promise(resolve => {
 						Chat.chat.room.create("Visitor", token).then(room => {
+							console.log(room);
+
 							Chat.logger.info(`Visitor Room Created: ${room.name}`)
 							Chat.chat.room.subscribe(room.name)
 
@@ -2552,7 +2598,7 @@ Chat.chat.render = (render = true, force = false) =>
 
 // stubs
 Chat.provide('session.user')
-Chat.session.user = 'arasquin@amazon.com';
+Chat.session.user = 'Guest';
 Chat.provide('realtime.on',     () => null);
 Chat.provide('call',  	  async () => null);
 Chat.provide('user.get_emails', () => null);
