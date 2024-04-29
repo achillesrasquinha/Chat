@@ -1,0 +1,4 @@
+[submodule ".vscode"]
+	path = .vscode
+	url = https://github.com/achillesrasquinha/.vscode
+	branch = main
