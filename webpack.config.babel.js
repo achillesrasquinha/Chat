@@ -13,7 +13,7 @@ export default {
     entry: path.join(PATH.SOURCE, 'index.jsx'),
     output: {
         path: PATH.TARGET,
-        filename: 'becca-chat.js'
+        filename: 'Chat.js'
     },
     module: {
         rules: [

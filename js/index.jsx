@@ -9,6 +9,7 @@ import datetime from './util/datetime'
 
 import Fuse   from 'fuse.js'
 
+
 // import './socketio_client'
 
 // import './ui/dialog'
@@ -20,9 +21,6 @@ import { h, Component as PreactComponent, render } from 'preact'
 import moment from 'moment';
 import $ from 'jquery'
 import 'bootstrap/dist/css/bootstrap.min.css'
-// import 'bootstrap-icons/font/bootstrap-icons.min.css'
-import 'font-awesome/css/font-awesome.min.css'
-// import '@primer/octicons/build/build.css'
 import './App.scss'
 
 const Chat  = window.Chat = {}
