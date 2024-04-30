@@ -2634,7 +2634,7 @@ const setup = ({
 			}
 		})
 
-		Chat.chat.render(true);
+		// Chat.chat.render(true);
 	} else {
 		// Website Settings
 		logger.info('Retrieving Chat Website Settings.')
