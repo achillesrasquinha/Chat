@@ -819,18 +819,18 @@ Chat.chat.website.settings = (fields, fn) =>
 
 Chat.chat.website.token    = (fn) =>
 {
-	return new Promise(resolve => {
-		Chat.call("Chat.chat.website.token")
-			.then(response => {
-				if ( fn )
-					fn(response.message)
+	// return new Promise(resolve => {
+	// 	Chat.call("Chat.chat.website.token")
+	// 		.then(response => {
+	// 			if ( fn )
+	// 				fn(response.message)
 
-				resolve(response.message)
-			})
-	})
+	// 			resolve(response.message)
+	// 		})
+	// })
+	return new Promisve(resolve => resolve("TOKEN"));
 }
 
-// const { h, Component: PreactComponent } = preact
 class Component extends PreactComponent {
 	constructor (props) {
 		super(props)
