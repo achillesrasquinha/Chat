@@ -2609,7 +2609,7 @@ const setup = ({
 } = { }) => {
 	const logger = Logger.get('Chat')
 	
-	logger.info('Setting up Chat instance...')
+	logger.info('Setting up Chat Instance...')
 
 	if ( !user ) {
 		// Create/Get Chat Profile for Guest User, retrieve enable_chat
