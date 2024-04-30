@@ -1,7 +1,7 @@
 {
     "scripts": {
         "build": "npx webpack",
-        "start": "npx webpack serve"
+        "start": "NODE_ENV=development npx webpack serve"
     },
     "devDependencies": {
         "@babel/preset-env": "^7.23.6",

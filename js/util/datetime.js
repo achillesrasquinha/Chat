@@ -18,7 +18,7 @@ export class datetime {
 		if ( typeof dayjs === 'undefined' )
 			throw new ImportError(`Day.js not installed.`)
 
-		this.dayjs = instance ? dayjs(instance, format) : dayjs()
+		this.dayjs = instance ? format ? dayjs(instance, format) : dayjs(instance) : dayjs()
 	}
 
 	/**
@@ -60,7 +60,7 @@ class range {
 	}
 }
 
-const equal = (a, b, type) => {
+export const equal = (a, b, type) => {
 	a = a.dayjs
 	b = b.dayjs
 
@@ -85,7 +85,7 @@ const equal = (a, b, type) => {
  * datetime.compare(then, datetime.now())
  * // returns 1
  */
-const compare = (a, b) => {
+export const compare = (a, b) => {
 	a = a.dayjs
 	b = b.dayjs
 
@@ -99,5 +99,6 @@ const compare = (a, b) => {
 }
 
 export default {
-    datetime
+    datetime,
+	equal
 }
