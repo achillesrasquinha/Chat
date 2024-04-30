@@ -46,3 +46,5 @@ export const pluralize = (word, count = 0, suffix = 's') => `${word}${count === 
  * // returns "Foobar"
  */
 export const capitalize = word => `${word.charAt(0).toUpperCase()}${word.slice(1)}`
+
+export const nl2br = string => string.replace(/\n/g, '<br>');

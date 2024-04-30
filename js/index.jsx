@@ -4,12 +4,13 @@
 /* eslint semi: "never" */
 // Fuck semicolons - https://mislav.net/2010/05/semicolons
 
-import { h, Component as PreactComponent, render } from 'preact'
+import { h, Component, render } from 'preact'
 import moment from 'moment';
 
 // import request from './request';
 import {
-	pluralize
+	pluralize,
+	nl2br
 } from './util/string'
 import {
 	head,
@@ -104,7 +105,9 @@ Chat.call = (method, data = null, cb = null) => {
 				Chat.realtime.publish("Chat.chat.room:update", {
 					room: room,
 					messages: CACHE.room[room],
-					last_message: message
+					last_message: message,
+					// type: "Visitor", // TODO: configure
+					// room_name: "Hi, I'm Alfred!"
 				});
 			}
 	}
@@ -135,23 +138,6 @@ Chat.realtime.publish = (channel, data) => {
 	event.data  = data;
 
 	document.dispatchEvent(event);
-
-	// const RESPONSE = {
-	// 	"Chat.chat.message:typing": {
-	// 		"channel": "Chat.chat.room:typing",
-	// 		   "data": {
-	// 			"room": "Guest Room",
-	// 			"user": "Guest"
-	// 		}
-	// 	}
-	// }
-
-	// if ( channel in RESPONSE ) {
-	// 	const response = RESPONSE[channel];
-	// 	Chat.realtime.on(response.channel, response.data);
-	// } else {
-	// 	logger.warn(`No response found for channel ${channel}.`);
-	// }
 }
 
 Chat.provide('user');
@@ -667,19 +653,25 @@ Chat.chat.room.on.create = function (fn) {
  * @param {function} fn - callback with the typing User within the Chat Room.
  */
 Chat.chat.room.on.typing = function (fn) {
-	Chat.realtime.on("Chat.chat.room:typing", r => fn(r.room, r.user))
+	Chat.realtime.on("Chat.chat.room:typing",
+		({ data }) => fn(data.room, data.user))
 }
 
 // Chat.chat.message
 Chat.provide('chat.message')
 
 Chat.chat.message.typing = function (room, user) {
-	Chat.realtime.publish("Chat.chat.message:typing", { user: user || Chat.session.user, room: room })
+	Chat.realtime.publish("Chat.chat.message:typing", { user: user || Chat.session.user, room: room });
+	
+	Chat.realtime.publish("Chat.chat.room:typing", {
+		user: user || Chat.session.user,
+		room: room
+	});
 }
 
-Chat.chat.message.send   = function (room, message, type = "Content") {
+Chat.chat.message.send   = function (room, message, { type = "Content", user = null } = { }) {
 	Chat.call("Chat.chat.doctype.chat_message.chat_message.send",
-		{ user: Chat.session.user, room: room, content: message, type: type })
+		{ user: user || Chat.session.user, room: room, content: message, type: type })
 }
 
 Chat.chat.message.update = function (message, update, fn) {
@@ -828,14 +820,7 @@ Chat.chat.website.token    = (fn) =>
 	// 			resolve(response.message)
 	// 		})
 	// })
-	return new Promisve(resolve => resolve("TOKEN"));
-}
-
-class Component extends PreactComponent {
-	constructor (props) {
-		super(props)
-		this.set_state = this.setState
-	}
+	return new Promise(resolve => resolve("TOKEN"));
 }
 
 // Chat.components
@@ -1165,7 +1150,7 @@ class extends Component {
 					state.push(room)
 				}
 
-			this.set_state({ rooms: [ ...this.state.rooms, ...state ] })
+			this.setState({ rooms: [ ...this.state.rooms, ...state ] })
 		}
 		this.room.update    = (room, update) => {
 			const { state } = this
@@ -1195,7 +1180,7 @@ class extends Component {
 				if ( !exists )
 					Chat.chat.room.get(room, (room) => this.room.add(room))
 				else {
-					this.set_state({ rooms })
+					this.setState({ rooms })
 				}
 			}
 
@@ -1213,7 +1198,7 @@ class extends Component {
 
 				const room  = { ...state.room, ...update }
 
-				this.set_state({ room })
+				this.setState({ room })
 			}
 		}
 		this.room.select    = (name) => {
@@ -1221,7 +1206,7 @@ class extends Component {
 				const  { state } = this
 				const room       = state.rooms.find(r => r.name === name)
 
-				this.set_state({
+				this.setState({
 					room: { ...state.room, ...room, messages: messages }
 				})
 			})
@@ -1235,7 +1220,7 @@ class extends Component {
 			Chat.chat.profile.create([
 				"status", "message_preview", "notification_tones", "conversation_tones"
 			]).then(profile => {
-				this.set_state({ profile })
+				this.setState({ profile })
 
 				Chat.chat.room.get(rooms => {
 					rooms = toArray(rooms)
@@ -1258,7 +1243,7 @@ class extends Component {
 
 			if ( 'status' in update ) {
 				if ( user === Chat.session.user ) {
-					this.set_state({
+					this.setState({
 						profile: { ...this.state.profile, status: update.status }
 					})
 				} else {
@@ -1285,8 +1270,7 @@ class extends Component {
 			if ( user !== Chat.session.user ) {
 				logger.warn(`User ${user} typing in Chat Room ${room}.`)
 				this.room.update(room, { typing: user })
-
-				setTimeout(() => this.room.update(room, { typing: null }), 5000)
+				setTimeout(() => this.room.update(room, { typing: null }), 1000)
 			}
 		})
 
@@ -1330,7 +1314,7 @@ class extends Component {
 				const mess  = copyArray(state.room.messages)
 				mess.push(r)
 
-				this.set_state({ room: { ...state.room, messages: mess } })
+				this.setState({ room: { ...state.room, messages: mess } })
 			}
 		})
 
@@ -1340,8 +1324,9 @@ class extends Component {
 	}
 
 	render () {
+		const me = this;
 		const { props, state } = this
-		const me               = this
+		const { onQuery, roomName } = props;
 
 		const ActionBar        = h(Chat.Chat.Widget.ActionBar, {
 			placeholder: __("Search or Create a New Chat"),
@@ -1418,11 +1403,11 @@ class extends Component {
 				isMobile() && {
 					   icon: "octicon octicon-x",
 					   class: "Chat-chat-close",
-					onclick: () => this.set_state({ toggle: false })
+					onclick: () => this.setState({ toggle: false })
 				}
 			], Boolean),
-			change: query => { me.set_state({ query }) },
-			  span: span  => { me.set_state({ span  }) },
+			change: query => { me.setState({ query }) },
+			  span: span  => { me.setState({ span  }) },
 		})
 
 		var   contacts   = [ ]
@@ -1459,15 +1444,15 @@ class extends Component {
 				else
 					Chat.chat.room.create("Direct", room.owner, squash(room.users), ({ name }) => this.room.select(name))
 			}})
-		const Room       = h(Chat.Chat.Widget.Room, { ...state.room, layout: layout, destroy: () => {
-			this.set_state({
+		const Room       = h(Chat.Chat.Widget.Room, { ...state.room, onQuery, roomName, layout: layout, destroy: () => {
+			this.setState({
 				room: { name: null, messages: [ ] }
 			})
 		}})
 
 		const component  = layout === Chat.Chat.Layout.POPPER ?
 			h(Chat.Chat.Widget.Popper, { heading: ActionBar, page: state.room.name && Room, target: props.target,
-				toggle: (t) => this.set_state({ toggle: t }) },
+				toggle: (t) => this.setState({ toggle: t }) },
 				RoomList
 			)
 			:
@@ -1532,7 +1517,7 @@ class extends Component {
 		else
 			toggle = this.state.active ? false : true
 
-		this.set_state({ active: toggle })
+		this.setState({ active: toggle })
 
 		this.props.toggle(toggle)
 	}
@@ -1597,7 +1582,7 @@ class extends Component {
 	change (e) {
 		const { props, state } = this
 
-		this.set_state({
+		this.setState({
 			[e.target.name]: e.target.value
 		})
 
@@ -1629,7 +1614,7 @@ class extends Component {
 						icon: `octicon octicon-screen-${state.span ? "normal" : "full"}`,
 						onclick: () => {
 							const span = !state.span
-							me.set_state({ span })
+							me.setState({ span })
 							props.span(span)
 						}
 					})
@@ -1772,6 +1757,7 @@ Chat.Chat.Widget.MediaProfile
 class extends Component {
 	render ( ) {
 		const { props } = this
+
 		const position  = Chat.Chat.Widget.MediaProfile.POSITION[props.position || "left"]
 		const avatar    = (
 			h("div", { class: `${position.class} media-middle` },
@@ -1786,13 +1772,13 @@ class extends Component {
 
 		return (
 			h("div", { class: "media", style: position.class === "media-right" ? { "text-align": "right" } : null },
-				position.class === "media-left"  ? avatar : null,
+				// position.class === "media-left"  ? avatar : null,
 				h("div", { class: "media-body" },
-					h("div", { class: "media-heading ellipsis small", style: `max-width: ${props.width_title || "100%"} display: inline-block` }, props.title),
+					h("div", { class: "media-heading ellipsis small", style: `font-size: 14px; max-width: ${props.width_title || "100%"} display: inline-block` }, props.title),
 					props.content  ? h("div","",h("small","",props.content))  : null,
 					props.subtitle ? h("div",{ class: "media-subtitle small" },h("small", { class: "text-muted" }, props.subtitle)) : null
 				),
-				position.class === "media-right" ? avatar : null
+				// position.class === "media-right" ? avatar : null
 			)
 		)
 	}
@@ -1809,9 +1795,20 @@ Chat.Chat.Widget.MediaProfile.POSITION
 Chat.Chat.Widget.Room
 =
 class extends Component {
+	constructor (props) {
+		super (props)
+		
+		this.state = {
+			incoming: false
+		}
+	}
+
 	render ( ) {
 		const { props, state } = this
-		const hints            =
+		const { onQuery, roomName } = props;
+		const { incoming } = state;
+
+		const hints =
 		[
 			{
 				 match: /@(\w*)$/,
@@ -1886,7 +1883,9 @@ class extends Component {
 						docname: props.name,
 						on_success(file_doc) {
 							const { file_url, filename } = file_doc
-							Chat.chat.message.send(props.name, { path: file_url, name: filename }, "File")
+							Chat.chat.message.send(props.name, { path: file_url, name: filename }, {
+								type: "File"
+							})
 						}
 					})
 				}
@@ -1905,16 +1904,14 @@ class extends Component {
 		}
 
 		return (
-			h("div", { class: `panel panel-default
+			h("div", { class: `panel panel-primary
 				${props.name ? "panel-bg" : ""}
 				${props.layout === Chat.Chat.Layout.PAGE || isMobile() ? "panel-span" : ""}`,
 				style: props.layout === Chat.Chat.Layout.PAGE && { width: "75%", left: "25%", "box-shadow": "none" } },
 				props.name && h(Chat.Chat.Widget.Room.Header, { ...props, on_back: props.destroy }),
 				props.name ?
 					!isEmpty(props.messages) ?
-						h(Chat.chat.component.ChatList, {
-							messages: props.messages
-						})
+						h(Chat.chat.component.ChatList, { messages: props.messages, incoming })
 						:
 						h("div", { class: "panel-body", style: { "height": "100%" } },
 							h("div", { class: "vcenter" },
@@ -1939,8 +1936,21 @@ class extends Component {
 							onchange: () => {
 								Chat.chat.message.typing(props.name)
 							},
-							onsubmit: (message) => {
-								Chat.chat.message.send(props.name, message)
+							onsubmit: async (message) => {
+								Chat.chat.message.send(props.name, message);
+
+								if ( onQuery ) {
+									this.setState({ incoming: true });
+
+									const response = await onQuery(message);
+									if ( response ) {
+										Chat.chat.message.send(props.name, response, {
+											user: "Bot"
+										})
+									}
+
+									this.setState({ incoming: false })
+								}
 							},
 							hint: hints
 						})
@@ -1956,14 +1966,19 @@ Chat.Chat.Widget.Room.Header
 =
 class extends Component {
 	render ( ) {
-		const { props }     = this
+		const { props } = this;
+		let { roomName, type } = props;
 
-		const item          = { }
+		const item = { }
 
-		if ( ["Group", "Visitor"].includes(props.type) ) {
+		if ( roomName ) {
+			type = "Visitor";
+		}
+
+		if ( ["Group", "Visitor"].includes(type) ) {
 			item.route      = `Form/Chat Room/${props.name}`
 
-			item.title      = props.room_name
+			item.title      = roomName || props.room_name
 			item.image      = props.avatar
 
 			if ( !isEmpty(props.typing) ) {
@@ -1988,7 +2003,7 @@ class extends Component {
 				item.subtitle = 'typing...'
 		}
 
-		const popper        = props.layout === Chat.Chat.Layout.POPPER || isMobile()
+		const popper = props.layout === Chat.Chat.Layout.POPPER || isMobile()
 
 		return (
 			h("div", { class: "panel-heading", style: { "height": "50px" } }, // sorry. :(
@@ -2028,16 +2043,19 @@ class extends Component {
 Chat.chat.component.ChatList
 =
 class extends Component {
-	on_mounted ( ) {
+	componentDidMount ( ) {
 		this.$element  = $('.Chat-chat').find('.chat-list')
 		this.$element.scrollTop(this.$element[0].scrollHeight)
 	}
 
-	on_updated ( ) {
+	componentDidUpdate ( ) {
 		this.$element.scrollTop(this.$element[0].scrollHeight)
 	}
 
 	render ( ) {
+		const { props }    = this;
+		const { incoming } = props;
+
 		var messages = [ ]
 		for (var i   = 0 ; i < this.props.messages.length ; ++i) {
 			var   message   = this.props.messages[i]
@@ -2048,10 +2066,22 @@ class extends Component {
 			messages.push(message)
 		}
 
+		const components = messages
+			.map(m => h(Chat.chat.component.ChatList.Item, {...m}))
+
 		return (
 			h("div",{class:"chat-list list-group"},
 				!isEmpty(messages) ?
-					messages.map(m => h(Chat.chat.component.ChatList.Item, {...m})) : null
+					h("span", null,
+						components,
+						incoming ? h(Chat.chat.component.ChatList.Item, {
+							type: "Content",
+							content: "...",
+							creation: messages[messages.length - 1].creation
+						}) : null
+					)
+					:
+					null
 			)
 		)
 	}
@@ -2155,7 +2185,7 @@ class extends Component {
 									h(Chat.components.FontAwesome, { type: "file", fixed: true }), ` ${content.name}`
 								)
 								:
-								content
+								h("span", { dangerouslySetInnerHTML: { __html: nl2br(content) } })
 						)
 				),
 				h("div",{class:"chat-bubble-meta"},
@@ -2191,7 +2221,7 @@ class extends Component {
 		const { props, state } = this
 		const value            = e.target.value
 
-		this.set_state({
+		this.setState({
 			[e.target.name]: value
 		})
 
@@ -2224,13 +2254,13 @@ class extends Component {
 							return item
 						}).slice(0, hint.max || 5)
 
-						this.set_state({ hints })
+						this.setState({ hints })
 					})
 				}
 				else
-					this.set_state({ hints: [ ] })
+					this.setState({ hints: [ ] })
 			} else
-				this.set_state({ hints: [ ] })
+				this.setState({ hints: [ ] })
 		}
 	}
 
@@ -2240,7 +2270,7 @@ class extends Component {
 		if ( this.state.content ) {
 			this.props.onsubmit(this.state.content)
 
-			this.set_state({ content: null })
+			this.setState({ content: null })
 		}
 	}
 
@@ -2255,7 +2285,7 @@ class extends Component {
 							return (
 								h("li", { class: "hint-list-item list-group-item" },
 									h("a", { href: "javascript:void(0)", onclick: () => {
-										this.set_state({ content: item.content, hints: [ ] })
+										this.setState({ content: item.content, hints: [ ] })
 									}},
 										item.component
 									)
@@ -2400,7 +2430,7 @@ Chat.notify     = (string, options) => {
 	})
 }
 
-Chat.chat.render = (render = true, force = false) =>
+Chat.chat.render = ({ render = true, force = false, onQuery = null, roomName = null } = { }) =>
 {
 	logger.info(`${render ? "Enable" : "Disable"} Chat for User.`);
 
@@ -2470,12 +2500,13 @@ Chat.chat.render = (render = true, force = false) =>
 						Chat.store.set('guest_token', token)
 
 						setup_room(token).then(room => {
-							Chat.chatter.render({ room })
+							Chat.chatter.render({ room, onQuery, roomName })
 						})
 					})
 				} else {
+					logger.info(`Using Existing Guest Token - ${token}`)
 					setup_room(token).then(room => {
-						Chat.chatter.render({ room })
+						Chat.chatter.render({ room, onQuery, roomName })
 					})
 				}
 			} else {
@@ -2498,7 +2529,9 @@ Chat.realtime.on  = (event, callback) => {
 };
 
 const setup = ({
-	user   = null
+	user     = null,
+	onQuery  = null,
+	roomName = null
 } = { }) => {
 	const logger = Logger.get('Chat')
 	
@@ -2513,7 +2546,7 @@ const setup = ({
 
 			if ( 'desk' in Chat && Chat.sys_defaults ) { // same as desk?
 				const should_render = Boolean(parseInt(Chat.sys_defaults.enable_chat)) && enable_chat
-				Chat.chat.render(should_render)
+				Chat.chat.render({ render: should_render })
 			}
 		})
 
@@ -2523,11 +2556,15 @@ const setup = ({
 			if ( user === Chat.session.user && 'enable_chat' in profile ) {
 				logger.warn(`Chat Profile update (Enable Chat - ${Boolean(profile.enable_chat)})`)
 				const should_render = Boolean(parseInt(Chat.sys_defaults.enable_chat)) && profile.enable_chat
-				Chat.chat.render(should_render)
+				Chat.chat.render({ render: should_render })
 			}
 		})
 
-		Chat.chat.render(true);
+		Chat.chat.render({
+			render: true,
+			onQuery,
+			roomName
+		})
 	} else {
 		// Website Settings
 		logger.info('Retrieving Chat Website Settings.')
@@ -2549,16 +2586,18 @@ const setup = ({
 					Chat.socketio.init(settings.socketio.port)
 				}
 
-				Chat.chat.render(should_render)
+				Chat.chat.render({ render: should_render })
 		})
 	}
 }
 
-Chat.init  = ({
-	user   = null,
-	active = true
+Chat.init = ({
+	user     = null,
+	active   = true,
+	onQuery  = null,
+	roomName = null
 } = { }) => {
-	setup({ user, active });
+	setup({ user, active, onQuery, roomName });
 };
 
 export default Chat;
