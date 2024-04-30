@@ -4,10 +4,34 @@
 /* eslint semi: "never" */
 // Fuck semicolons - https://mislav.net/2010/05/semicolons
 
+import { h, Component as PreactComponent, render } from 'preact'
+import moment from 'moment';
+
+// import request from './request';
+import {
+	pluralize
+} from './util/string'
+import {
+	head,
+	copy as copyArray,
+	squash,
+	compact
+} from './util/array'
+import {
+	isEmpty,
+	toArray
+} from './util/type'
+import {
+	isMobile
+} from './util/device'
 import datetime from './util/datetime'
+import { __ } from './util/i18n'
+import Logger from './log'
 
 import Fuse   from 'fuse.js'
 
+import $ from 'jquery'
+import 'bootstrap/dist/css/bootstrap.min.css'
 
 // import './socketio_client'
 
@@ -16,18 +40,10 @@ import Fuse   from 'fuse.js'
 
 // import './utils/user'
 
-import { h, Component as PreactComponent, render } from 'preact'
-import moment from 'moment';
-import $ from 'jquery'
-import 'bootstrap/dist/css/bootstrap.min.css'
 import './App.scss'
 
-import Logger from './log'
-
-const Chat  = window.Chat = {}
-Chat.logger = Logger.get('Chat', Logger.ERROR)
-
-const __  = s => s;
+const Chat   = window.Chat = {}
+const logger = Logger.get('Chat', Logger.ERROR);
 
 Chat.provide = (key, value = {}) => {
 	const keys   = key.split(".")
@@ -50,6 +66,10 @@ Chat.provide = (key, value = {}) => {
 	}
 };
 
+const CACHE = {
+	"room": []
+};
+
 Chat.call = (method, data = null, cb = null) => {
 	const MOCK = {
 		"Chat.chat.website.token": "TOKEN",
@@ -59,18 +79,44 @@ Chat.call = (method, data = null, cb = null) => {
 		"Chat.chat.doctype.chat_room.chat_room.create": {
 			"name": "Guest Room"
 		},
-		"Chat.chat.doctype.chat_room.chat_room.history": [
+		"Chat.chat.doctype.chat_room.chat_room.history":
+			d => {
+				const { room } = d;
 
-		],
-		"Chat.chat.doctype.chat_message.chat_message.send": {
+				if ( !(room in CACHE.room) ) {
+					CACHE.room[room] = [];
+				}
 
-		}
+				return CACHE.room[room];
+			},
+		"Chat.chat.doctype.chat_message.chat_message.send":
+			d => {
+				const { room } = d;
+
+				if ( !(room in CACHE.room) ) {
+					CACHE.room[room] = [];
+				}
+
+				const message = { ...d, creation: new datetime.datetime() };
+				CACHE.room[room].push(message);
+
+				Chat.realtime.publish("Chat.chat.message:create", message);
+				Chat.realtime.publish("Chat.chat.room:update", {
+					room: room,
+					messages: CACHE.room[room],
+					last_message: message
+				});
+			}
 	}
 
-	Chat.logger.info(`Calling Method: ${method}: ${JSON.stringify(data)}`);
+	logger.info(`Calling Method: ${method}: ${JSON.stringify(data)}`);
 
 	if ( method in MOCK ) {
-		const response = MOCK[method]
+		let response = MOCK[method]
+
+		if ( typeof response === "function" ) {
+			response = response(data)
+		}
 
 		if ( cb ) {
 			cb({ message: response });
@@ -82,7 +128,30 @@ Chat.call = (method, data = null, cb = null) => {
 
 Chat.provide('realtime');
 Chat.realtime.publish = (channel, data) => {
-	Chat.logger.info(`Publishing to Channel '${channel}': ${JSON.stringify(data)}`);
+	logger.info(`Publishing to Channel '${channel}': ${JSON.stringify(data)}`);
+	const event = document.createEvent('Event');
+	event.initEvent(channel, true, true);
+
+	event.data  = data;
+
+	document.dispatchEvent(event);
+
+	// const RESPONSE = {
+	// 	"Chat.chat.message:typing": {
+	// 		"channel": "Chat.chat.room:typing",
+	// 		   "data": {
+	// 			"room": "Guest Room",
+	// 			"user": "Guest"
+	// 		}
+	// 	}
+	// }
+
+	// if ( channel in RESPONSE ) {
+	// 	const response = RESPONSE[channel];
+	// 	Chat.realtime.on(response.channel, response.data);
+	// } else {
+	// 	logger.warn(`No response found for channel ${channel}.`);
+	// }
 }
 
 Chat.provide('user');
@@ -156,25 +225,6 @@ Chat.provide('_')
 // String Utilities
 
 /**
- * @description Python-inspired format extension for string objects.
- *
- * @param  {string} string - A string with placeholders.
- * @param  {object} object - An object with placeholder, value pairs.
- *
- * @return {string}        - The formatted string.
- *
- * @example
- * Chat._.format('{foo} {bar}', { bar: 'foo', foo: 'bar' })
- * // returns "bar foo"
- */
-Chat._.format = (string, object) => {
-	for (const key in object)
-		string  = string.replace(`{${key}}`, object[key])
-
-	return string
-}
-
-/**
  * @description Fuzzy Search a given query within a dataset.
  *
  * @param  {string} query   - A query string.
@@ -206,167 +256,7 @@ Chat._.fuzzy_search = (query, dataset, options) => {
 	return result
 }
 
-/**
- * @description Pluralizes a given word.
- *
- * @param  {string} word  - The word to be pluralized.
- * @param  {number} count - The count.
- *
- * @return {string}       - The pluralized string.
- *
- * @example
- * Chat._.pluralize('member',  1)
- * // returns "member"
- * Chat._.pluralize('members', 0)
- * // returns "members"
- *
- * @todo Handle more edge cases.
- */
-Chat._.pluralize = (word, count = 0, suffix = 's') => `${word}${count === 1 ? '' : suffix}`
-
-/**
- * @description Captializes a given string.
- *
- * @param   {word}  - The word to be capitalized.
- *
- * @return {string} - The capitalized word.
- *
- * @example
- * Chat._.capitalize('foobar')
- * // returns "Foobar"
- */
-Chat._.capitalize = word => `${word.charAt(0).toUpperCase()}${word.slice(1)}`
-
 // Array Utilities
-
-/**
- * @description Returns the first element of an array.
- *
- * @param   {array} array - The array.
- *
- * @returns - The first element of an array, undefined elsewise.
- *
- * @example
- * Chat._.head([1, 2, 3])
- * // returns 1
- * Chat._.head([])
- * // returns undefined
- */
-Chat._.head = arr => Chat._.is_empty(arr) ? undefined : arr[0]
-
-/**
- * @description Returns a copy of the given array (shallow).
- *
- * @param   {array} array - The array to be copied.
- *
- * @returns {array}       - The copied array.
- *
- * @example
- * Chat._.copy_array(["foobar", "barfoo"])
- * // returns ["foobar", "barfoo"]
- *
- * @todo Add optional deep copy.
- */
-Chat._.copy_array = array => {
-	if ( Array.isArray(array) )
-		return array.slice()
-	else
-		throw TypeError(`Expected Array, recieved ${typeof array} instead.`)
-}
-
-/**
- * @description Check whether an array|string|object|jQuery is empty.
- *
- * @param   {any}     value - The value to be checked on.
- *
- * @returns {boolean}       - Returns if the object is empty.
- *
- * @example
- * Chat._.is_empty([])      // returns true
- * Chat._.is_empty(["foo"]) // returns false
- *
- * Chat._.is_empty("")      // returns true
- * Chat._.is_empty("foo")   // returns false
- *
- * Chat._.is_empty({ })            // returns true
- * Chat._.is_empty({ foo: "bar" }) // returns false
- *
- * Chat._.is_empty($('.papito'))   // returns false
- *
- * @todo Handle other cases.
- */
-Chat._.is_empty = value => {
-	let empty = false
-
-	if ( value === undefined || value === null )
-		empty = true
-	else
-	if ( Array.isArray(value) || typeof value === 'string' || value instanceof $ )
-		empty = value.length === 0
-	else
-	if ( typeof value === 'object' )
-		empty = Object.keys(value).length === 0
-
-	return empty
-}
-
-/**
- * @description Converts a singleton to an array, if required.
- *
- * @param {object} item - An object
- *
- * @example
- * Chat._.as_array("foo")
- * // returns ["foo"]
- *
- * Chat._.as_array(["foo"])
- * // returns ["foo"]
- *
- * @see https://docs.oracle.com/javase/8/docs/api/java/util/Arrays.html#asList-T...-
- */
-Chat._.as_array = item => Array.isArray(item) ? item : [item]
-
-/**
- * @description Return a singleton if array contains a single element.
- *
- * @param   {array}        list - An array to squash.
- *
- * @returns {array|object}      - Returns an array if there's more than 1 object else the first object itself.
- *
- * @example
- * Chat._.squash(["foo"])
- * // returns "foo"
- *
- * Chat._.squash(["foo", "bar"])
- * // returns ["foo", "bar"]
- */
-Chat._.squash = list => Array.isArray(list) && list.length === 1 ? list[0] : list
-
-/**
- * @description Returns true, if the current device is a mobile device.
- *
- * @example
- * Chat._.is_mobile()
- * // returns true|false
- *
- * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Browser_detection_using_the_user_agent
- */
-Chat._.is_mobile = () => {
-	const regex    = new RegExp("Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini", "i")
-	const agent    = navigator.userAgent
-	const mobile   = regex.test(agent)
-
-	return mobile
-}
-
-/**
- * @description Removes falsey values from an array.
- *
- * @example
- * Chat._.compact([1, 2, false, NaN, ''])
- * // returns [1, 2]
- */
-Chat._.compact   = array => array.filter(Boolean)
 
 // extend utils to base.
 Chat.utils       = { ...Chat.utils, ...Chat._ }
@@ -386,7 +276,7 @@ Chat.utils       = { ...Chat.utils, ...Chat._ }
  * // returns "Rahul"
  */
 Chat.provide('user')
-Chat.user.first_name = user => Chat._.head(Chat.user.full_name(user).split(" "))
+Chat.user.first_name = user => head(Chat.user.full_name(user).split(" "))
 
 Chat.provide('ui.keycode')
 Chat.ui.keycode = { RETURN: 13 }
@@ -450,7 +340,7 @@ Chat.chat.profile.create = (fields, fn) => {
 		fields = null
 	} else
 	if ( typeof fields === "string" )
-		fields = Chat._.as_array(fields)
+		fields = toArray(fields)
 
 	return new Promise(resolve => {
 		Chat.call("Chat.chat.doctype.chat_profile.chat_profile.create",
@@ -554,7 +444,7 @@ Chat.chat.room.create = function (kind, owner, users, name, fn) {
 		name = null
 	}
 
-	users    = Chat._.as_array(users)
+	users    = toArray(users)
 
 	return new Promise(resolve => {
 		Chat.call("Chat.chat.doctype.chat_room.chat_room.create",
@@ -608,7 +498,7 @@ Chat.chat.room.get = function (names, fields, fn) {
 	}
 	else
 	if ( typeof names === "string" ) {
-		names  = Chat._.as_array(names)
+		names  = toArray(names)
 
 		if ( typeof fields === "function" ) {
 			fn     = fields
@@ -616,7 +506,7 @@ Chat.chat.room.get = function (names, fields, fn) {
 		}
 		else
 		if ( typeof fields === "string" )
-			fields = Chat._.as_array(fields)
+			fields = toArray(fields)
 	}
 
 	return new Promise(resolve => {
@@ -625,7 +515,7 @@ Chat.chat.room.get = function (names, fields, fn) {
 				response => {
 					let rooms = response.message
 					if ( rooms ) { // Chat.api BOGZ! (emtpy arrays are falsified, not good design).
-						rooms = Chat._.as_array(rooms)
+						rooms = toArray(rooms)
 						rooms = rooms.map(room => {
 							return { ...room, creation: new datetime.datetime(room.creation),
 								last_message: room.last_message ? {
@@ -634,7 +524,7 @@ Chat.chat.room.get = function (names, fields, fn) {
 								} : null
 							}
 						})
-						rooms = Chat._.squash(rooms)
+						rooms = squash(rooms)
 					}
 					else
 						rooms = [ ]
@@ -677,7 +567,7 @@ Chat.chat.room.history = function (name, fn) {
 		Chat.call("Chat.chat.doctype.chat_room.chat_room.history",
 			{ room: name, user: Chat.session.user },
 				r => {
-					let messages = r.message ? Chat._.as_array(r.message) : [ ] // Chat.api BOGZ! (emtpy arrays are falsified, not good design).
+					let messages = r.message ? toArray(r.message) : [ ] // Chat.api BOGZ! (emtpy arrays are falsified, not good design).
 					messages     = messages.map(m => {
 						return { ...m,
 							creation: new datetime.datetime(m.creation)
@@ -706,7 +596,7 @@ Chat.chat.room.search = function (query, rooms) {
 			return r.room_name
 		else
 			if ( r.owner === Chat.session.user )
-				return Chat.user.full_name(Chat._.squash(r.users))
+				return Chat.user.full_name(squash(r.users))
 			else
 				return Chat.user.full_name(r.owner)
 	})
@@ -749,12 +639,14 @@ Chat.provide('chat.room.on')
  * @param {function} fn - callback with the Chat Room and Update.
  */
 Chat.chat.room.on.update = function (fn) {
-	Chat.realtime.on("Chat.chat.room:update", r => {
-		if ( r.data.last_message )
-			// creation to datetime.datetime (easier to manipulate).
-			r.data = { ...r.data, last_message: { ...r.data.last_message, creation: new datetime.datetime(r.data.last_message.creation) } }
+	Chat.realtime.on("Chat.chat.room:update", e => {
+		let { data } = e
 
-		fn(r.room, r.data)
+		if ( data.last_message )
+			// creation to datetime.datetime (easier to manipulate).
+			data = { ...data, last_message: { ...data.last_message, creation: new datetime.datetime(data.last_message.creation) } }
+		
+		fn(data.room, data)
 	})
 }
 
@@ -804,7 +696,7 @@ Chat.chat.message.update = function (message, update, fn) {
 }
 
 Chat.chat.message.sort   = (messages) => {
-	if ( !Chat._.is_empty(messages) )
+	if ( !isEmpty(messages) )
 		messages.sort((a, b) => datetime.compare(b.creation, a.creation))
 
 	return messages
@@ -858,16 +750,16 @@ Chat.chat.sound.play  = function (name, volume = 0.1) {
 	const $audio = $(`<audio class="chat-audio"/>`)
 	$audio.attr('volume', volume)
 
-	if  ( Chat._.is_empty($audio) )
+	if  ( isEmpty($audio) )
 		$(document).append($audio)
 
 	if  ( !$audio.paused ) {
-		Chat.logger.info('Stopping sound playing.')
+		logger.info('Stopping sound playing.')
 		$audio[0].pause()
 		$audio.attr('currentTime', 0)
 	}
 
-	Chat.logger.info('Playing sound.')
+	logger.info('Playing sound.')
 	$audio.attr('src', `${Chat.chat.sound.PATH}/chat-${name}.mp3`)
 	$audio[0].play()
 }
@@ -877,7 +769,7 @@ Chat.chat.sound.PATH  = '/assets/Chat/sounds'
 Chat.chat.emojis = [ ]
 Chat.chat.emoji  = function (fn) {
 	return new Promise(resolve => {
-		if ( !Chat._.is_empty(Chat.chat.emojis) ) {
+		if ( !isEmpty(Chat.chat.emojis) ) {
 			if ( fn )
 				fn(Chat.chat.emojis)
 
@@ -904,7 +796,7 @@ Chat.chat.website.settings = (fields, fn) =>
 		fields = null
 	} else
 	if ( typeof fields === "string" )
-		fields = Chat._.as_array(fields)
+		fields = toArray(fields)
 
 	return new Promise(resolve => {
 		Chat.call("Chat.chat.website.settings",
@@ -982,6 +874,7 @@ Chat.components.Button.SIZE
 		class: "btn-lg"
 	}
 }
+
 Chat.components.Button.defaultProps
 =
 {
@@ -1258,17 +1151,17 @@ class extends Component {
 		// room actions
 		this.room           = { }
 		this.room.add       = rooms => {
-			rooms           = Chat._.as_array(rooms)
+			rooms           = toArray(rooms)
 			const names     = rooms.map(r => r.name)
 
-			Chat.logger.info(`Subscribing ${Chat.session.user} to Chat Rooms ${names.join(", ")}.`)
+			logger.info(`Subscribing ${Chat.session.user} to Chat Rooms ${names.join(", ")}.`)
 			Chat.chat.room.subscribe(names)
 
 			const state     = [ ]
 
 			for (const room of rooms)
 				  if ( ["Group", "Visitor"].includes(room.type) || room.owner === Chat.session.user || room.last_message || room.users.includes(Chat.session.user)) {
-					Chat.logger.info(`Adding ${room.name} to component.`)
+					logger.info(`Adding ${room.name} to component.`)
 					state.push(room)
 				}
 
@@ -1281,15 +1174,15 @@ class extends Component {
 				if ( r.name === room ) {
 					exists  = true
 					if ( update.typing ) {
-						if ( !Chat._.is_empty(r.typing) ) {
+						if ( !isEmpty(r.typing) ) {
 							const usr = update.typing
 							if ( !r.typing.includes(usr) ) {
-								update.typing = Chat._.copy_array(r.typing)
+								update.typing = copyArray(r.typing)
 								update.typing.push(usr)
 							}
 						}
 						else
-							update.typing = Chat._.as_array(update.typing)
+							update.typing = toArray(update.typing)
 					}
 
 					return { ...r, ...update }
@@ -1301,20 +1194,21 @@ class extends Component {
 			if ( Chat.session.user !== 'Guest' ) {
 				if ( !exists )
 					Chat.chat.room.get(room, (room) => this.room.add(room))
-				else
+				else {
 					this.set_state({ rooms })
+				}
 			}
 
 			if ( state.room.name === room ) {
 				if ( update.typing ) {
-					if ( !Chat._.is_empty(state.room.typing) ) {
+					if ( !isEmpty(state.room.typing) ) {
 						const usr = update.typing
 						if ( !state.room.typing.includes(usr) ) {
-							update.typing = Chat._.copy_array(state.room.typing)
+							update.typing = copyArray(state.room.typing)
 							update.typing.push(usr)
 						}
 					} else
-						update.typing = Chat._.as_array(update.typing)
+						update.typing = toArray(update.typing)
 				}
 
 				const room  = { ...state.room, ...update }
@@ -1344,10 +1238,10 @@ class extends Component {
 				this.set_state({ profile })
 
 				Chat.chat.room.get(rooms => {
-					rooms = Chat._.as_array(rooms)
-					Chat.logger.info(`User ${Chat.session.user} is subscribed to ${rooms.length} ${Chat._.pluralize('room', rooms.length)}.`)
+					rooms = toArray(rooms)
+					logger.info(`User ${Chat.session.user} is subscribed to ${rooms.length} ${pluralize('room', rooms.length)}.`)
 
-					if ( !Chat._.is_empty(rooms) )
+					if ( !isEmpty(rooms) )
 						this.room.add(rooms)
 				})
 
@@ -1360,7 +1254,7 @@ class extends Component {
 
 	bind ( ) {
 		Chat.chat.profile.on.update((user, update) => {
-			Chat.logger.warn(`TRIGGER: Chat Profile update ${JSON.stringify(update)} of User ${user}.`)
+			logger.warn(`TRIGGER: Chat Profile update ${JSON.stringify(update)} of User ${user}.`)
 
 			if ( 'status' in update ) {
 				if ( user === Chat.session.user ) {
@@ -1378,18 +1272,18 @@ class extends Component {
 		})
 
 		Chat.chat.room.on.create((room) => {
-			Chat.logger.warn(`TRIGGER: Chat Room ${room.name} created.`)
+			logger.warn(`TRIGGER: Chat Room ${room.name} created.`)
 			this.room.add(room)
 		})
 
 		Chat.chat.room.on.update((room, update) => {
-			Chat.logger.warn(`TRIGGER: Chat Room ${room} update ${JSON.stringify(update)} recieved.`)
+			logger.warn(`TRIGGER: Chat Room ${room} update ${JSON.stringify(update)} recieved.`)
 			this.room.update(room, update)
 		})
 
 		Chat.chat.room.on.typing((room, user) => {
 			if ( user !== Chat.session.user ) {
-				Chat.logger.warn(`User ${user} typing in Chat Room ${room}.`)
+				logger.warn(`User ${user} typing in Chat Room ${room}.`)
 				this.room.update(room, { typing: user })
 
 				setTimeout(() => this.room.update(room, { typing: null }), 5000)
@@ -1433,7 +1327,7 @@ class extends Component {
 			}
 
 			if ( r.room === state.room.name ) {
-				const mess  = Chat._.copy_array(state.room.messages)
+				const mess  = copyArray(state.room.messages)
 				mess.push(r)
 
 				this.set_state({ room: { ...state.room, messages: mess } })
@@ -1441,11 +1335,11 @@ class extends Component {
 		})
 
 		Chat.chat.message.on.update((message, update) => {
-			Chat.logger.warn(`TRIGGER: Chat Message ${message} update ${JSON.stringify(update)} recieved.`)
+			logger.warn(`TRIGGER: Chat Message ${message} update ${JSON.stringify(update)} recieved.`)
 		})
 	}
 
-	render ( ) {
+	render () {
 		const { props, state } = this
 		const me               = this
 
@@ -1454,7 +1348,7 @@ class extends Component {
 				  class: "level",
 				 layout: props.layout,
 				actions:
-			Chat._.compact([
+			compact([
 				{
 					  label: __("New"),
 					onclick: function ( ) {
@@ -1502,7 +1396,7 @@ class extends Component {
 									   label: __('Create'),
 									onsubmit: (values) => {
 										if ( values.type === "Group" ) {
-											if ( !Chat._.is_empty(values.users) ) {
+											if ( !isEmpty(values.users) ) {
 												const name  = values.group_name
 												const users = dialog.fields_dict.users.get_values()
 
@@ -1521,7 +1415,7 @@ class extends Component {
 						dialog.show()
 					}
 				},
-				Chat._.is_mobile() && {
+				isMobile() && {
 					   icon: "octicon octicon-x",
 					   class: "Chat-chat-close",
 					onclick: () => this.set_state({ toggle: false })
@@ -1539,7 +1433,7 @@ class extends Component {
 
 				for (const room of state.rooms) {
 					if ( room.type === 'Direct' ) {
-						if ( room.owner === email || Chat._.squash(room.users) === email )
+						if ( room.owner === email || squash(room.users) === email )
 							exists = true
 					}
 				}
@@ -1552,7 +1446,7 @@ class extends Component {
 
 		const layout     = state.span  ? Chat.Chat.Layout.PAGE : Chat.Chat.Layout.POPPER
 
-		const RoomList   = Chat._.is_empty(rooms) && !state.query ?
+		const RoomList   = isEmpty(rooms) && !state.query ?
 			h("div", { class: "vcenter" },
 				h("div", { class: "text-center text-extra-muted" },
 					h("p","",__("You don't have any messages yet."))
@@ -1563,7 +1457,7 @@ class extends Component {
 				if ( room.name )
 					this.room.select(room.name)
 				else
-					Chat.chat.room.create("Direct", room.owner, Chat._.squash(room.users), ({ name }) => this.room.select(name))
+					Chat.chat.room.create("Direct", room.owner, squash(room.users), ({ name }) => this.room.select(name))
 			}})
 		const Room       = h(Chat.Chat.Widget.Room, { ...state.room, layout: layout, destroy: () => {
 			this.set_state({
@@ -1654,19 +1548,19 @@ class extends Component {
 
 		return !state.destroy ?
 		(
-			h("div", { class: "Chat-chat-popper", style: !props.target ? { "margin-bottom": "80px" } : null },
+			h("div", { class: "Chat-chat-popper", style: !props.target ? { "margin-bottom": "90px" } : null },
 				!props.target ?
 					h(Chat.components.FAB, {
 						  class: "Chat-fab",
 						   icon: state.active ? "fa fa-fw fa-times" : "font-heavy fa fa-fw fa-comment",
-						   size: Chat._.is_mobile() ? null : "large",
+						   size: isMobile() ? null : "large",
 						   type: "primary",
 						onclick: () => this.toggle(),
 					}) : null,
 				state.active ?
 					h("div", { class: "Chat-chat-popper-collapse" },
 						props.page ? props.page : (
-							h("div", { class: `panel panel-default ${Chat._.is_mobile() ? "panel-span" : ""}` },
+							h("div", { class: `panel panel-default ${isMobile() ? "panel-span" : ""}` },
 								h("div", { class: "panel-heading" },
 									props.heading
 								),
@@ -1728,9 +1622,9 @@ class extends Component {
 				h("form", { oninput: this.change, onsubmit: this.submit },
 					h("input", { autocomplete: "off", class: "form-control input-sm", name: "query", value: state.query, placeholder: props.placeholder || "Search" }),
 				),
-				!Chat._.is_empty(actions) ?
+				!isEmpty(actions) ?
 					actions.map(action => h(Chat.Chat.Widget.ActionBar.Action, { ...action })) : null,
-				!Chat._.is_mobile() ?
+				!isMobile() ?
 					h(Chat.Chat.Widget.ActionBar.Action, {
 						icon: `octicon octicon-screen-${state.span ? "normal" : "full"}`,
 						onclick: () => {
@@ -1780,7 +1674,7 @@ class extends Component {
 		const { props } = this
 		const rooms     = props.rooms
 
-		return !Chat._.is_empty(rooms) ? (
+		return !isEmpty(rooms) ? (
 			h("ul", { class: "Chat-chat-room-list nav nav-pills nav-stacked" },
 				rooms.map(room => h(Chat.Chat.Widget.RoomList.Item, { ...room, click: props.click }))
 			)
@@ -1802,8 +1696,8 @@ class extends Component {
 			item.title     = props.room_name
 			item.image     = props.avatar
 
-			if ( !Chat._.is_empty(props.typing) ) {
-				props.typing  = Chat._.as_array(props.typing) // HACK: (BUG) why does typing return a string?
+			if ( !isEmpty(props.typing) ) {
+				props.typing  = toArray(props.typing) // HACK: (BUG) why does typing return a string?
 				const names   = props.typing.map(user => Chat.user.first_name(user))
 				item.subtitle = `${names.join(", ")} typing...`
 			} else
@@ -1818,13 +1712,13 @@ class extends Component {
 				}
 			}
 		} else {
-			const user     = props.owner === Chat.session.user ? Chat._.squash(props.users) : props.owner
+			const user     = props.owner === Chat.session.user ? squash(props.users) : props.owner
 
 			item.title     = Chat.user.full_name(user)
 			item.image     = Chat.user.image(user)
 			item.abbr      = Chat.user.abbr(user)
 
-			if ( !Chat._.is_empty(props.typing) )
+			if ( !isEmpty(props.typing) )
 				item.subtitle = 'typing...'
 			else
 			if ( props.last_message ) {
@@ -1924,7 +1818,7 @@ class extends Component {
 				search: function (keyword, callback) {
 					if ( props.type === 'Group' ) {
 						const query = keyword.slice(1)
-						const users = [].concat(Chat._.as_array(props.owner), props.users)
+						const users = [].concat(toArray(props.owner), props.users)
 						const grep  = users.filter(user => user !== Chat.session.user && user.indexOf(query) === 0)
 
 						callback(grep)
@@ -1967,8 +1861,8 @@ class extends Component {
 		   }
 		]
 
-		const actions = Chat._.compact([
-			!Chat._.is_mobile() && {
+		const actions = compact([
+			!isMobile() && {
 				 icon: "camera",
 				label: "Camera",
 				onclick: ( ) => {
@@ -2001,7 +1895,7 @@ class extends Component {
 
 		if ( Chat.session.user !== 'Guest' ) {
 			if (props.messages) {
-				props.messages = Chat._.as_array(props.messages)
+				props.messages = toArray(props.messages)
 				for (const message of props.messages)
 					if ( !message.seen.includes(Chat.session.user) )
 						Chat.chat.message.seen(message.name)
@@ -2013,11 +1907,11 @@ class extends Component {
 		return (
 			h("div", { class: `panel panel-default
 				${props.name ? "panel-bg" : ""}
-				${props.layout === Chat.Chat.Layout.PAGE || Chat._.is_mobile() ? "panel-span" : ""}`,
+				${props.layout === Chat.Chat.Layout.PAGE || isMobile() ? "panel-span" : ""}`,
 				style: props.layout === Chat.Chat.Layout.PAGE && { width: "75%", left: "25%", "box-shadow": "none" } },
 				props.name && h(Chat.Chat.Widget.Room.Header, { ...props, on_back: props.destroy }),
 				props.name ?
-					!Chat._.is_empty(props.messages) ?
+					!isEmpty(props.messages) ?
 						h(Chat.chat.component.ChatList, {
 							messages: props.messages
 						})
@@ -2072,29 +1966,29 @@ class extends Component {
 			item.title      = props.room_name
 			item.image      = props.avatar
 
-			if ( !Chat._.is_empty(props.typing) ) {
-				props.typing  = Chat._.as_array(props.typing) // HACK: (BUG) why does typing return as a string?
+			if ( !isEmpty(props.typing) ) {
+				props.typing  = toArray(props.typing) // HACK: (BUG) why does typing return as a string?
 				const users   = props.typing.map(user => Chat.user.first_name(user))
 				item.subtitle = `${users.join(", ")} typing...`
 			} else
 				item.subtitle = props.type === "Group" ?
-					__(`${props.users.length} ${Chat._.pluralize('member', props.users.length)}`)
+					__(`${props.users.length} ${pluralize('member', props.users.length)}`)
 					:
 					""
 		}
 		else {
-			const user      = props.owner === Chat.session.user ? Chat._.squash(props.users) : props.owner
+			const user      = props.owner === Chat.session.user ? squash(props.users) : props.owner
 
 			item.route      = `Form/User/${user}`
 
 			item.title      = Chat.user.full_name(user)
 			item.image      = Chat.user.image(user)
 
-			if ( !Chat._.is_empty(props.typing) )
+			if ( !isEmpty(props.typing) )
 				item.subtitle = 'typing...'
 		}
 
-		const popper        = props.layout === Chat.Chat.Layout.POPPER || Chat._.is_mobile()
+		const popper        = props.layout === Chat.Chat.Layout.POPPER || isMobile()
 
 		return (
 			h("div", { class: "panel-heading", style: { "height": "50px" } }, // sorry. :(
@@ -2115,7 +2009,7 @@ class extends Component {
 					),
 					h("div", { class: popper ? "col-xs-2"  : "col-xs-3" },
 						h("div", { class: "text-right" },
-							Chat._.is_mobile() && h(Chat.components.Button, { class: "Chat-chat-close", onclick: props.toggle },
+							isMobile() && h(Chat.components.Button, { class: "Chat-chat-close", onclick: props.toggle },
 								h(Chat.components.Octicon, { type: "x" })
 							)
 						)
@@ -2147,7 +2041,6 @@ class extends Component {
 		var messages = [ ]
 		for (var i   = 0 ; i < this.props.messages.length ; ++i) {
 			var   message   = this.props.messages[i]
-			const me        = message.user === Chat.session.user
 
 			if ( i === 0 || !datetime.equal(message.creation, this.props.messages[i - 1].creation, 'day') )
 				messages.push({ type: "Notification", content: message.creation.format('MMMM DD') })
@@ -2157,7 +2050,7 @@ class extends Component {
 
 		return (
 			h("div",{class:"chat-list list-group"},
-				!Chat._.is_empty(messages) ?
+				!isEmpty(messages) ?
 					messages.map(m => h(Chat.chat.component.ChatList.Item, {...m})) : null
 			)
 		)
@@ -2242,7 +2135,7 @@ class extends Component {
 		const creation 	= props.creation.format('hh:mm A')
 
 		const me        = props.user === Chat.session.user
-		const read      = !Chat._.is_empty(props.seen) && !props.seen.includes(Chat.session.user)
+		const read      = !isEmpty(props.seen) && !props.seen.includes(Chat.session.user)
 
 		const content   = props.content
 
@@ -2317,7 +2210,7 @@ class extends Component {
 			const token  = tokens[tokens.length - 1]
 
 			if ( token ) {
-				props.hint   = Chat._.as_array(props.hint)
+				props.hint   = toArray(props.hint)
 				const hint   = props.hint.find(hint => hint.match.test(token))
 
 				if ( hint ) {
@@ -2372,13 +2265,13 @@ class extends Component {
 					) : null,
 				h("form", { oninput: this.onchange, onsubmit: this.onsubmit },
 					h("div",{class:"input-group input-group-lg"},
-						!Chat._.is_empty(props.actions) ?
+						!isEmpty(props.actions) ?
 							h("div",{class:"input-group-btn dropup"},
-								h(Chat.components.Button,{ class: (Chat.session.user === "Guest" ? "disabled" : "dropdown-toggle"), "data-toggle": "dropdown"},
+								h(Chat.components.Button,{ class: `${(Chat.session.user === "Guest" ? "disabled" : "dropdown-toggle")} no-border`, "data-toggle": "dropdown"},
 									h(Chat.components.FontAwesome, { class: "text-muted", type: "paperclip", fixed: true })
 								),
 								h("div",{ class:"dropdown-menu dropdown-menu-left", onclick: e => e.stopPropagation() },
-									!Chat._.is_empty(props.actions) && props.actions.map((action) => {
+									!isEmpty(props.actions) && props.actions.map((action) => {
 										return (
 											h("li", null,
 												h("a",{onclick:action.onclick},
@@ -2401,8 +2294,8 @@ class extends Component {
 							   }
 						}),
 						h("div",{class:"input-group-btn"},
-							h(Chat.components.Button, { onclick: this.onsubmit },
-								h(Chat.components.FontAwesome, { class: !Chat._.is_empty(state.content) ? "text-primary" : "text-muted", type: "send", fixed: true })
+							h(Chat.components.Button, { onclick: this.onsubmit, type: "parimry" },
+								h(Chat.components.FontAwesome, { class: !isEmpty(state.content) ? "text-primary" : "text-muted", type: "send", fixed: true })
 							),
 						)
 					)
@@ -2498,7 +2391,7 @@ Chat.notify     = (string, options) => {
 	options       = Object.assign({ }, OPTIONS, options)
 
 	if ( !Chat.browser.Notification )
-		Chat.logger.error('ERROR: This browser does not support desktop notifications.')
+		logger.error('ERROR: This browser does not support desktop notifications.')
 
 	Notification.requestPermission(status => {
 		if ( status === "granted" ) {
@@ -2509,9 +2402,7 @@ Chat.notify     = (string, options) => {
 
 Chat.chat.render = (render = true, force = false) =>
 {
-	Chat.logger.info(`${render ? "Enable" : "Disable"} Chat for User.`)
-
-	console.log(Chat);
+	logger.info(`${render ? "Enable" : "Disable"} Chat for User.`);
 
 	const desk = 'desk' in Chat
 	if ( desk ) {
@@ -2550,17 +2441,15 @@ Chat.chat.render = (render = true, force = false) =>
 				Chat.store = Chat.Store.get('Chat.chat')
 				var token  = Chat.store.get('guest_token')
 
-				Chat.logger.info(`Local Guest Token - ${token}`)
+				logger.info(`Local Guest Token - ${token}`)
 
 				const setup_room = (token) =>
 				{
-					Chat.logger.info(`Setting Up Room...`);
+					logger.info(`Setting Up Room...`);
 
 					return new Promise(resolve => {
 						Chat.chat.room.create("Visitor", token).then(room => {
-							console.log(room);
-
-							Chat.logger.info(`Visitor Room Created: ${room.name}`)
+							logger.info(`Visitor Room Created: ${room.name}`)
 							Chat.chat.room.subscribe(room.name)
 
 							var reference = room
@@ -2577,7 +2466,7 @@ Chat.chat.render = (render = true, force = false) =>
 
 				if ( !token ) {
 					Chat.chat.website.token().then(token => {
-						Chat.logger.info(`Generated Guest Token - ${token}`)
+						logger.info(`Generated Guest Token - ${token}`)
 						Chat.store.set('guest_token', token)
 
 						setup_room(token).then(room => {
@@ -2598,11 +2487,15 @@ Chat.chat.render = (render = true, force = false) =>
 
 // stubs
 Chat.provide('session.user')
-Chat.session.user = 'Guest';
-Chat.provide('realtime.on',     () => null);
-Chat.provide('call',  	  async () => null);
 Chat.provide('user.get_emails', () => null);
 Chat.provide('ui.Dialog',       class { show () { } });
+
+Chat.session.user = 'Guest';
+
+Chat.realtime.on  = (event, callback) => {
+	logger.info(`Recieved Event - ${event}`)
+	document.addEventListener(event, callback)
+};
 
 const setup = ({
 	user   = null
@@ -2634,7 +2527,7 @@ const setup = ({
 			}
 		})
 
-		// Chat.chat.render(true);
+		Chat.chat.render(true);
 	} else {
 		// Website Settings
 		logger.info('Retrieving Chat Website Settings.')
@@ -2661,7 +2554,7 @@ const setup = ({
 	}
 }
 
-Chat.init = ({
+Chat.init  = ({
 	user   = null,
 	active = true
 } = { }) => {

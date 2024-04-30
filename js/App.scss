@@ -1,7 +1,6 @@
-/* the element that this class is applied to, should have a max width for this to work*/
-// body {
-//     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
-// }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+}
 a {
     cursor: pointer;
 }
@@ -252,8 +251,8 @@ a.no-decoration:hover, a.no-decoration:focus, a.no-decoration:active {
     position: relative;
     display: flex;
     flex-direction: column;
-    width: 350px;
-    height: 500px;
+    width: 400px;
+    height: 700px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
 }
 .Chat-chat > .Chat-chat-popper > .Chat-chat-popper-collapse > .panel .vcenter {
@@ -294,7 +293,7 @@ a.no-decoration:hover, a.no-decoration:focus, a.no-decoration:active {
 }
 .Chat-chat > .Chat-chat-popper > .Chat-chat-popper-collapse > .panel.panel-bg {
     background-size: 350px 500px;
-    // background-image: url(/assets/Chat/images/chat/wallpaper-default.jpg);
+    background-image: url(https://raw.githubusercontent.com/frappe/frappe/v12.28.1/frappe/public/images/chat/wallpaper-default.jpg);
 }
 .Chat-chat > .Chat-chat-popper > .Chat-chat-popper-collapse > .panel.panel-span {
     position: fixed;
@@ -453,4 +452,8 @@ a.no-decoration:hover, a.no-decoration:focus, a.no-decoration:active {
             width: 56px;
            height: 56px;
     }
+}
+
+.no-border {
+    border: none !important;
 }
