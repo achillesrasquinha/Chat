@@ -1,6 +1,3 @@
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
-}
 a {
     cursor: pointer;
 }
@@ -245,7 +242,7 @@ a.no-decoration:hover, a.no-decoration:focus, a.no-decoration:active {
     bottom: 0px;
     right: 0px;
     margin: 15px;
-    z-index: 1035;
+    z-index: 99999;
 }
 .Chat-chat > .Chat-chat-popper > .Chat-chat-popper-collapse > .panel {
     position: relative;
