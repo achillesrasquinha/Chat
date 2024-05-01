@@ -98,7 +98,11 @@ export const compare = (a, b) => {
 		return  0
 }
 
+export const now = () => new datetime()
+
 export default {
     datetime,
-	equal
+	equal,
+	compare,
+	now,
 }

@@ -29,6 +29,8 @@ import datetime from './util/datetime'
 import { __ } from './util/i18n'
 import Logger from './log'
 
+import iconThreeDots from './assets/three-dots.svg';
+
 import Fuse   from 'fuse.js'
 
 import $ from 'jquery'
@@ -42,6 +44,7 @@ import 'bootstrap/dist/css/bootstrap.min.css'
 // import './utils/user'
 
 import './App.scss'
+import '../scss/Chat.scss';
 
 const Chat   = window.Chat = {}
 const logger = Logger.get('Chat', Logger.ERROR);
@@ -1326,7 +1329,8 @@ class extends Component {
 	render () {
 		const me = this;
 		const { props, state } = this
-		const { onQuery, roomName } = props;
+		const { onQuery, roomName, botName, active, welcomeMessage, samplePrompts,
+			roomFooter, inputPlaceholder } = props;
 
 		const ActionBar        = h(Chat.Chat.Widget.ActionBar, {
 			placeholder: __("Search or Create a New Chat"),
@@ -1444,14 +1448,15 @@ class extends Component {
 				else
 					Chat.chat.room.create("Direct", room.owner, squash(room.users), ({ name }) => this.room.select(name))
 			}})
-		const Room       = h(Chat.Chat.Widget.Room, { ...state.room, onQuery, roomName, layout: layout, destroy: () => {
+		const Room       = h(Chat.Chat.Widget.Room, { ...state.room, onQuery, welcomeMessage, samplePrompts,
+			inputPlaceholder, roomName, botName, roomFooter, layout: layout, destroy: () => {
 			this.setState({
 				room: { name: null, messages: [ ] }
 			})
 		}})
 
 		const component  = layout === Chat.Chat.Layout.POPPER ?
-			h(Chat.Chat.Widget.Popper, { heading: ActionBar, page: state.room.name && Room, target: props.target,
+			h(Chat.Chat.Widget.Popper, { active, heading: ActionBar, page: state.room.name && Room, target: props.target,
 				toggle: (t) => this.setState({ toggle: t }) },
 				RoomList
 			)
@@ -1495,14 +1500,18 @@ Chat.Chat.Widget.Popper
 class extends Component {
 	constructor (props) {
 		super (props)
-
 		this.setup(props);
 	}
 
 	setup (props) {
+		const { active } = props;
+
 		this.toggle = this.toggle.bind(this)
 
-		this.state  = Chat.Chat.Widget.Popper.defaultState
+		this.state  = {
+			...Chat.Chat.Widget.Popper.defaultState,
+			active
+		}
 
 		if ( props.target )
 			$(props.target).click(() => this.toggle())
@@ -1522,7 +1531,7 @@ class extends Component {
 		this.props.toggle(toggle)
 	}
 
-	on_mounted ( ) {
+	componentDidMount ( ) {
 		$(document.body).on('click', '.page-container, .Chat-chat-close', ({ currentTarget }) => {
 			this.toggle(false)
 		})
@@ -1539,7 +1548,7 @@ class extends Component {
 						  class: "Chat-fab",
 						   icon: state.active ? "fa fa-fw fa-times" : "font-heavy fa fa-fw fa-comment",
 						   size: isMobile() ? null : "large",
-						   type: "primary",
+						   type: "brand",
 						onclick: () => this.toggle(),
 					}) : null,
 				state.active ?
@@ -1805,7 +1814,8 @@ class extends Component {
 
 	render ( ) {
 		const { props, state } = this
-		const { onQuery, roomName } = props;
+		const { onQuery, roomFooter, welcomeMessage, samplePrompts,
+			inputPlaceholder, botName } = props;
 		const { incoming } = state;
 
 		const hints =
@@ -1904,14 +1914,19 @@ class extends Component {
 		}
 
 		return (
-			h("div", { class: `panel panel-primary
+			h("div", { class: `panel panel-brand
 				${props.name ? "panel-bg" : ""}
 				${props.layout === Chat.Chat.Layout.PAGE || isMobile() ? "panel-span" : ""}`,
 				style: props.layout === Chat.Chat.Layout.PAGE && { width: "75%", left: "25%", "box-shadow": "none" } },
 				props.name && h(Chat.Chat.Widget.Room.Header, { ...props, on_back: props.destroy }),
 				props.name ?
-					!isEmpty(props.messages) ?
-						h(Chat.chat.component.ChatList, { messages: props.messages, incoming })
+					!isEmpty(props.messages) || welcomeMessage?
+						h(Chat.chat.component.ChatList, {
+							messages: props.messages, incoming, welcomeMessage, samplePrompts,
+							onClickAction: action => {
+								Chat.chat.message.send(props.name, action);
+							}
+						})
 						:
 						h("div", { class: "panel-body", style: { "height": "100%" } },
 							h("div", { class: "vcenter" },
@@ -1932,7 +1947,15 @@ class extends Component {
 					),
 				props.name ?
 					h("div", { class: "chat-room-footer" },
-						h(Chat.chat.component.ChatForm, { actions: actions,
+						roomFooter ?
+							h("div", { class: "chat-room-footer-banner panel panel-default" },
+								h("div", { class: "panel-body" },
+									h("div", { dangerouslySetInnerHTML: { __html: roomFooter } })
+								)
+							) : null,
+						h(Chat.chat.component.ChatForm, {
+							actions,
+							inputPlaceholder,
 							onchange: () => {
 								Chat.chat.message.typing(props.name)
 							},
@@ -1945,7 +1968,7 @@ class extends Component {
 									const response = await onQuery(message);
 									if ( response ) {
 										Chat.chat.message.send(props.name, response, {
-											user: "Bot"
+											user: botName || "Bot"
 										})
 									}
 
@@ -2054,14 +2077,15 @@ class extends Component {
 
 	render ( ) {
 		const { props }    = this;
-		const { incoming } = props;
+		const { incoming, welcomeMessage, samplePrompts,
+			onClickAction } = props;
 
 		var messages = [ ]
 		for (var i   = 0 ; i < this.props.messages.length ; ++i) {
 			var   message   = this.props.messages[i]
 
 			if ( i === 0 || !datetime.equal(message.creation, this.props.messages[i - 1].creation, 'day') )
-				messages.push({ type: "Notification", content: message.creation.format('MMMM DD') })
+				messages.push({ type: "Notification", content: message.creation.format('MMMM D YYYY, hh:mm A') })
 
 			messages.push(message)
 		}
@@ -2071,13 +2095,19 @@ class extends Component {
 
 		return (
 			h("div",{class:"chat-list list-group"},
+				isEmpty(messages) && welcomeMessage ?
+					h(Chat.chat.component.ChatList.Item, {
+						type: "Content",
+						content: welcomeMessage,
+						creation: new datetime.datetime(),
+						actions: samplePrompts,
+						onClickAction,
+					}) : null,
 				!isEmpty(messages) ?
 					h("span", null,
 						components,
 						incoming ? h(Chat.chat.component.ChatList.Item, {
-							type: "Content",
-							content: "...",
-							creation: messages[messages.length - 1].creation
+							type: "Loader"
 						}) : null
 					)
 					:
@@ -2161,40 +2191,65 @@ class extends Component {
 	}
 
 	render  ( ) {
-		const { props } = this
-		const creation 	= props.creation.format('hh:mm A')
+		const { props }  = this;
+		let { content, actions, onClickAction, type, creation } = props;
 
 		const me        = props.user === Chat.session.user
 		const read      = !isEmpty(props.seen) && !props.seen.includes(Chat.session.user)
 
-		const content   = props.content
+		if ( type == "Loader" ) {
+			content  = `<img src="${iconThreeDots}" style="width: 25px; height: 25px;"/>`
+		} else {
+			creation = props.creation.format('hh:mm A')
+		}
 
 		return (
 			h("div",{class:`chat-bubble ${props.groupable ? "chat-groupable" : ""} chat-bubble-${me ? "r" : "l"}`,
-				onclick: this.onclick},
-				props.room_type === "Group" && !me?
-					h("div",{class:"chat-bubble-author"},
-						h("a", { onclick: () => { Chat.set_route(`Form/User/${props.user}`) } },
-							Chat.user.full_name(props.user)
-						)
-					) : null,
-				h("div",{class:"chat-bubble-content"},
+				onclick: this.onclick,
+				style: `min-width: ${type == "Loader" ? "0" : "20%"}`},
+				// props.room_type === "Group" && !me?
+				h("div",{class:"chat-bubble-author"},
+					h("a", { onclick: () => { Chat.set_route(`Form/User/${props.user}`) } },
+						me ? "You" : Chat.user.full_name(props.user)
+					)
+				), // : null,
+				h("div",{class:"chat-bubble-content",
+					style: `margin-bottom: ${type == "Loader" ? "0" : "5px"}`},
 						h("small","",
 							props.type === "File" ?
 								h("a", { class: "no-decoration", href: content.path, target: "_blank" },
 									h(Chat.components.FontAwesome, { type: "file", fixed: true }), ` ${content.name}`
 								)
 								:
-								h("span", { dangerouslySetInnerHTML: { __html: nl2br(content) } })
-						)
+								h("div", { dangerouslySetInnerHTML: { __html: nl2br(content) } })
+						),
+						!isEmpty(actions) ?
+							h("div",{class:"chat-bubble-actions btn-group-vertical"},
+								actions.map(action => {
+									return (
+										h(Chat.components.Button, {
+											class: "btn-sm",
+											onclick: e => {
+												e.preventDefault()
+												if ( onClickAction ) {
+													onClickAction(action)
+												}
+											}
+										},
+											h("small", null, action)
+										)
+									)
+								})
+							) : null
 				),
-				h("div",{class:"chat-bubble-meta"},
-					h("span",{class:"chat-bubble-creation"},creation),
-					me && read ?
-						h("span",{class:"chat-bubble-check"},
-							h(Chat.components.Octicon,{type:"check"})
-						) : null
-				)
+				props.type !== "Loader" ?
+					h("div",{class:"chat-bubble-meta"},
+						h("span",{class:"chat-bubble-creation"},creation),
+						me && read ?
+							h("span",{class:"chat-bubble-check"},
+								h(Chat.components.Octicon,{type:"check"})
+							) : null
+					) : null
 			)
 		)
 	}
@@ -2276,6 +2331,11 @@ class extends Component {
 
 	render ( ) {
 		const { props, state } = this
+		let { inputPlaceholder } = props;
+
+		if ( !inputPlaceholder ) {
+			inputPlaceholder = __("Type a message...")
+		}
 
 		return (
 			h("div",{class:"chat-form"},
@@ -2316,7 +2376,7 @@ class extends Component {
 									class: "form-control",
 									 name: "content",
 									value: state.content,
-							  placeholder: "Type a message",
+							  placeholder: inputPlaceholder,
 								autofocus: true,
 							   onkeypress: (e) => {
 									if ( e.which === Chat.ui.keycode.RETURN && !e.shiftKey )
@@ -2324,7 +2384,7 @@ class extends Component {
 							   }
 						}),
 						h("div",{class:"input-group-btn"},
-							h(Chat.components.Button, { onclick: this.onsubmit, type: "parimry" },
+							h(Chat.components.Button, { onclick: this.onsubmit, type: "" },
 								h(Chat.components.FontAwesome, { class: !isEmpty(state.content) ? "text-primary" : "text-muted", type: "send", fixed: true })
 							),
 						)
@@ -2354,7 +2414,7 @@ class extends Component  {
 
 		return (
 			h("div", { class: `Chat-chat-emoji dropup ${props.class}` },
-				h(Chat.components.Button, { type: "primary", class: "dropdown-toggle", "data-toggle": "dropdown" },
+				h(Chat.components.Button, { type: "brand", class: "dropdown-toggle", "data-toggle": "dropdown" },
 					h(Chat.components.FontAwesome, { type: "smile-o", fixed: true })
 				),
 				h("div", { class: "dropdown-menu dropdown-menu-right", onclick: e => e.stopPropagation() },
@@ -2411,8 +2471,8 @@ Chat.provide('boot')
 Chat.provide('browser')
 Chat.browser.Notification = 'Notification' in window
 
-Chat.notify     = (string, options) => {
-	Chat.log    = Logger.get('Chat.notify')
+Chat.notify = (string, options) => {
+	Chat.log = Logger.get('Chat.notify')
 
 	const OPTIONS = {
 		icon: Chat.assets.image('favicon.png', 'Chat'),
@@ -2430,7 +2490,22 @@ Chat.notify     = (string, options) => {
 	})
 }
 
-Chat.chat.render = ({ render = true, force = false, onQuery = null, roomName = null } = { }) =>
+Chat.chat.render = ({
+	render   = true,
+	active   = true,
+	force    = false,
+	onQuery  = null,
+
+	botName  = null,
+	roomName = null,
+
+	welcomeMessage = null,
+	samplePrompts  = null,
+
+	roomFooter     = null,
+
+	inputPlaceholder = null,
+} = { }) =>
 {
 	logger.info(`${render ? "Enable" : "Disable"} Chat for User.`);
 
@@ -2494,23 +2569,35 @@ Chat.chat.render = ({ render = true, force = false, onQuery = null, roomName = n
 					})
 				}
 
+				const renderArgs = {
+					roomName, botName, onQuery, active,
+					welcomeMessage, samplePrompts, roomFooter,
+					inputPlaceholder
+				}
+
 				if ( !token ) {
 					Chat.chat.website.token().then(token => {
 						logger.info(`Generated Guest Token - ${token}`)
 						Chat.store.set('guest_token', token)
 
 						setup_room(token).then(room => {
-							Chat.chatter.render({ room, onQuery, roomName })
+							Chat.chatter.render({
+								...renderArgs,
+								room
+							});
 						})
 					})
 				} else {
 					logger.info(`Using Existing Guest Token - ${token}`)
 					setup_room(token).then(room => {
-						Chat.chatter.render({ room, onQuery, roomName })
+						Chat.chatter.render({
+							...renderArgs,
+							room
+						});
 					})
 				}
 			} else {
-				Chat.chatter.render()
+				Chat.chatter.render(renderArgs)
 			}
 		}
 	}
@@ -2530,8 +2617,18 @@ Chat.realtime.on  = (event, callback) => {
 
 const setup = ({
 	user     = null,
+	active   = true,
 	onQuery  = null,
-	roomName = null
+
+	botName  = null,
+	roomName = null,
+
+	welcomeMessage = null,
+	samplePrompts  = null,
+
+	roomFooter     = null,
+	
+	inputPlaceholder = null,
 } = { }) => {
 	const logger = Logger.get('Chat')
 	
@@ -2562,8 +2659,18 @@ const setup = ({
 
 		Chat.chat.render({
 			render: true,
+			active,
 			onQuery,
-			roomName
+
+			botName,
+			roomName,
+
+			welcomeMessage,
+			samplePrompts,
+
+			roomFooter,
+			
+			inputPlaceholder
 		})
 	} else {
 		// Website Settings
@@ -2595,9 +2702,18 @@ Chat.init = ({
 	user     = null,
 	active   = true,
 	onQuery  = null,
-	roomName = null
+	botName  = null,
+	roomName = null,
+
+	welcomeMessage 	 = null,
+	samplePrompts  	 = null,
+
+	roomFooter     	 = null,
+
+	inputPlaceholder = null,
 } = { }) => {
-	setup({ user, active, onQuery, roomName });
+	setup({ user, active, onQuery, botName, roomName, welcomeMessage,
+		samplePrompts, roomFooter, inputPlaceholder });
 };
 
 export default Chat;

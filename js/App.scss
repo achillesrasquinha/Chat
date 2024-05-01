@@ -7,9 +7,9 @@ a, a:hover, a:active, a:focus, .btn, .btn:hover, .btn:active, .btn:focus {
 img {
     max-width: 100%;
 }
-p {
-    margin: 10px 0px;
-}
+// p {
+//     margin: 10px 0px;
+// }
 .text-color {
     color: #36414C !important;
 }
@@ -290,7 +290,7 @@ a.no-decoration:hover, a.no-decoration:focus, a.no-decoration:active {
 }
 .Chat-chat > .Chat-chat-popper > .Chat-chat-popper-collapse > .panel.panel-bg {
     background-size: 350px 500px;
-    background-image: url(https://raw.githubusercontent.com/frappe/frappe/v12.28.1/frappe/public/images/chat/wallpaper-default.jpg);
+    // background-image: url(https://raw.githubusercontent.com/frappe/frappe/v12.28.1/frappe/public/images/chat/wallpaper-default.jpg);
 }
 .Chat-chat > .Chat-chat-popper > .Chat-chat-popper-collapse > .panel.panel-span {
     position: fixed;
