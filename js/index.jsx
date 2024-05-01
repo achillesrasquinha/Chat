@@ -1806,6 +1806,8 @@ Chat.Chat.Widget.Room
 class extends Component {
 	constructor (props) {
 		super (props)
+
+		this.sendMessage = this.sendMessage.bind(this)
 		
 		this.state = {
 			incoming: false
@@ -1814,8 +1816,8 @@ class extends Component {
 
 	render ( ) {
 		const { props, state } = this
-		const { onQuery, roomFooter, welcomeMessage, samplePrompts,
-			inputPlaceholder, botName } = props;
+		const { roomFooter, welcomeMessage, samplePrompts,
+			inputPlaceholder } = props;
 		const { incoming } = state;
 
 		const hints =
@@ -1923,8 +1925,8 @@ class extends Component {
 					!isEmpty(props.messages) || welcomeMessage?
 						h(Chat.chat.component.ChatList, {
 							messages: props.messages, incoming, welcomeMessage, samplePrompts,
-							onClickAction: action => {
-								Chat.chat.message.send(props.name, action);
+							onClickAction: async action => {
+								this.sendMessage(action)
 							}
 						})
 						:
@@ -1960,20 +1962,7 @@ class extends Component {
 								Chat.chat.message.typing(props.name)
 							},
 							onsubmit: async (message) => {
-								Chat.chat.message.send(props.name, message);
-
-								if ( onQuery ) {
-									this.setState({ incoming: true });
-
-									const response = await onQuery(message);
-									if ( response ) {
-										Chat.chat.message.send(props.name, response, {
-											user: botName || "Bot"
-										})
-									}
-
-									this.setState({ incoming: false })
-								}
+								this.sendMessage(message);
 							},
 							hint: hints
 						})
@@ -1983,6 +1972,27 @@ class extends Component {
 			)
 		)
 	}
+
+	async sendMessage (message) {
+		const { props } = this;
+		const { name, onQuery }  = props;
+
+		Chat.chat.message.send(name, message);
+
+		if ( onQuery ) {
+			this.setState({ incoming: true });
+
+			const response = await onQuery(message);
+			if ( response ) {
+				Chat.chat.message.send(name, response, {
+					user: botName || "Bot"
+				})
+			}
+
+			this.setState({ incoming: false })
+		}
+	}
+
 }
 
 Chat.Chat.Widget.Room.Header
