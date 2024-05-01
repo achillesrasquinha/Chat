@@ -101,7 +101,8 @@ Chat.call = (method, data = null, cb = null) => {
 					CACHE.room[room] = [];
 				}
 
-				const message = { ...d, creation: new datetime.datetime() };
+				const message = { ...d, creation: new datetime.datetime(),
+					seen: [] };
 				CACHE.room[room].push(message);
 
 				Chat.realtime.publish("Chat.chat.message:create", message);
@@ -1975,7 +1976,7 @@ class extends Component {
 
 	async sendMessage (message) {
 		const { props } = this;
-		const { name, onQuery }  = props;
+		const { name, onQuery, botName }  = props;
 
 		Chat.chat.message.send(name, message);
 
@@ -2257,7 +2258,7 @@ class extends Component {
 						h("span",{class:"chat-bubble-creation"},creation),
 						me && read ?
 							h("span",{class:"chat-bubble-check"},
-								h(Chat.components.Octicon,{type:"check"})
+								h("i",{class:"fa fa-check"})
 							) : null
 					) : null
 			)
