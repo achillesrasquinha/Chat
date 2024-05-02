@@ -248,8 +248,8 @@ a.no-decoration:hover, a.no-decoration:focus, a.no-decoration:active {
     position: relative;
     display: flex;
     flex-direction: column;
-    width: 400px;
-    height: 700px;
+    width: 550px;
+    height: 800px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
 }
 .Chat-chat > .Chat-chat-popper > .Chat-chat-popper-collapse > .panel .vcenter {
@@ -374,7 +374,7 @@ a.no-decoration:hover, a.no-decoration:focus, a.no-decoration:active {
 }
 .chat-list .chat-list-item .chat-bubble {
     min-width: 20%;
-    max-width: 75%;
+    // max-width: 75%;
     display: inline-block;
     padding: 5px 10px;
     border-radius: 5px;

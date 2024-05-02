@@ -673,9 +673,10 @@ Chat.chat.message.typing = function (room, user) {
 	});
 }
 
-Chat.chat.message.send   = function (room, message, { type = "Content", user = null } = { }) {
+Chat.chat.message.send   = function (room, message, { type = "Content",
+	user = null, prompts = null } = { }) {
 	Chat.call("Chat.chat.doctype.chat_message.chat_message.send",
-		{ user: user || Chat.session.user, room: room, content: message, type: type })
+		{ user: user || Chat.session.user, room: room, content: message, type, prompts })
 }
 
 Chat.chat.message.update = function (message, update, fn) {
@@ -1927,6 +1928,7 @@ class extends Component {
 						h(Chat.chat.component.ChatList, {
 							messages: props.messages, incoming, welcomeMessage, samplePrompts,
 							onClickAction: async action => {
+								console.log("action", action);
 								this.sendMessage(action)
 							}
 						})
@@ -1963,6 +1965,7 @@ class extends Component {
 								Chat.chat.message.typing(props.name)
 							},
 							onsubmit: async (message) => {
+								console.log("submitted", message)
 								this.sendMessage(message);
 							},
 							hint: hints
@@ -1984,9 +1987,10 @@ class extends Component {
 			this.setState({ incoming: true });
 
 			const response = await onQuery(message);
-			if ( response ) {
-				Chat.chat.message.send(name, response, {
-					user: botName || "Bot"
+			if ( response && response.message ) {
+				Chat.chat.message.send(name, response.message, {
+					user: botName || "Bot",
+					prompts: response.prompts
 				})
 			}
 
@@ -2096,13 +2100,14 @@ class extends Component {
 			var   message   = this.props.messages[i]
 
 			if ( i === 0 || !datetime.equal(message.creation, this.props.messages[i - 1].creation, 'day') )
-				messages.push({ type: "Notification", content: message.creation.format('MMMM D YYYY, hh:mm A') })
+				messages.push({ type: "Notification", content: message.creation.format('MMMM D YYYY, hh:mm A'),
+					prompts: message.prompts })
 
 			messages.push(message)
 		}
 
 		const components = messages
-			.map(m => h(Chat.chat.component.ChatList.Item, {...m}))
+			.map(m => h(Chat.chat.component.ChatList.Item, {...m, onClickAction}))
 
 		return (
 			h("div",{class:"chat-list list-group"},
@@ -2145,13 +2150,14 @@ Chat.chat.component.ChatList.Item
 class extends Component {
 	render ( ) {
 		const { props } = this
+		const { content, actions,
+			prompts, user, type, room_type, onClickAction } = props
 
-		const me        = props.user === Chat.session.user
-		const content   = props.content
+		const me        = user === Chat.session.user
 
 		return (
 			h("div",{class: "chat-list-item list-group-item"},
-				props.type === "Notification" ?
+				type === "Notification" ?
 					h("div",{class:"chat-list-notification"},
 						h("div",{class:"chat-list-notification-content"},
 							content
@@ -2159,12 +2165,16 @@ class extends Component {
 					)
 					:
 					h("div",{class:`${me ? "text-right" : ""}`},
-						props.room_type === "Group" && !me ?
+						room_type === "Group" && !me ?
 							h(Chat.components.Avatar, {
-								title: Chat.user.full_name(props.user),
-								image: Chat.user.image(props.user)
+								title: Chat.user.full_name(user),
+								image: Chat.user.image(user)
 							}) : null,
-						h(Chat.chat.component.ChatBubble, props)
+						h(Chat.chat.component.ChatBubble, {
+							...props,
+							actions: actions || prompts,
+							onClickAction
+						})
 					)
 			)
 		)
@@ -2235,23 +2245,26 @@ class extends Component {
 								h("div", { dangerouslySetInnerHTML: { __html: nl2br(content) } })
 						),
 						!isEmpty(actions) ?
-							h("div",{class:"chat-bubble-actions btn-group-vertical"},
-								actions.map(action => {
-									return (
-										h(Chat.components.Button, {
-											class: "btn-sm",
-											onclick: e => {
-												e.preventDefault()
-												if ( onClickAction ) {
-													onClickAction(action)
+							h("div", null,
+								h("hr", { style: `margin: 5px 0; border-color: #fff` }),
+								h("div",{class:"chat-bubble-actions btn-group-vertical"},
+									actions.map(action => {
+										return (
+											h(Chat.components.Button, {
+												class: "btn-xs",
+												onclick: e => {
+													e.preventDefault()
+													if ( onClickAction ) {
+														onClickAction(action)
+													}
 												}
-											}
-										},
-											h("small", null, action)
+											},
+												h("small", null, action)
+											)
 										)
-									)
-								})
-							) : null
+									})
+								)
+							)  : null
 				),
 				props.type !== "Loader" ?
 					h("div",{class:"chat-bubble-meta"},
