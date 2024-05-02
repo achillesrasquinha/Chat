@@ -7,7 +7,19 @@
 }
 
 .chat-bubble-actions {
-    padding-top: 5px;
+    margin-top: 5px;
+
+    button {
+        text-align: left;
+        background-color: #BCC0C0 !important;
+        color: white;
+        font-weight: bold;
+    }
+
+    button:hover {
+        background-color: #A5A8A8 !important;
+        color: white;
+    }
 }
 
 .chat-room-footer-banner {
