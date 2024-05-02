@@ -674,9 +674,9 @@ Chat.chat.message.typing = function (room, user) {
 }
 
 Chat.chat.message.send   = function (room, message, { type = "Content",
-	user = null, prompts = null } = { }) {
+	user = null, prompts = null, links = null } = { }) {
 	Chat.call("Chat.chat.doctype.chat_message.chat_message.send",
-		{ user: user || Chat.session.user, room: room, content: message, type, prompts })
+		{ user: user || Chat.session.user, room: room, content: message, type, prompts, links })
 }
 
 Chat.chat.message.update = function (message, update, fn) {
@@ -1990,7 +1990,8 @@ class extends Component {
 			if ( response && response.message ) {
 				Chat.chat.message.send(name, response.message, {
 					user: botName || "Bot",
-					prompts: response.prompts
+					prompts: response.prompts,
+					links: response.links
 				})
 			}
 
@@ -2098,16 +2099,17 @@ class extends Component {
 		var messages = [ ]
 		for (var i   = 0 ; i < this.props.messages.length ; ++i) {
 			var   message   = this.props.messages[i]
+			console.log(message)
 
 			if ( i === 0 || !datetime.equal(message.creation, this.props.messages[i - 1].creation, 'day') )
 				messages.push({ type: "Notification", content: message.creation.format('MMMM D YYYY, hh:mm A'),
-					prompts: message.prompts })
+					prompts: message.prompts, links: message.links })
 
 			messages.push(message)
 		}
 
 		const components = messages
-			.map(m => h(Chat.chat.component.ChatList.Item, {...m, onClickAction}))
+			.map(m => h(Chat.chat.component.ChatList.Item, {...m, onClickAction }))
 
 		return (
 			h("div",{class:"chat-list list-group"},
@@ -2150,7 +2152,7 @@ Chat.chat.component.ChatList.Item
 class extends Component {
 	render ( ) {
 		const { props } = this
-		const { content, actions,
+		const { content, actions, links,
 			prompts, user, type, room_type, onClickAction } = props
 
 		const me        = user === Chat.session.user
@@ -2173,6 +2175,7 @@ class extends Component {
 						h(Chat.chat.component.ChatBubble, {
 							...props,
 							actions: actions || prompts,
+							links,
 							onClickAction
 						})
 					)
@@ -2213,7 +2216,7 @@ class extends Component {
 
 	render  ( ) {
 		const { props }  = this;
-		let { content, actions, onClickAction, type, creation } = props;
+		let { content, actions, links, onClickAction, type, creation } = props;
 
 		const me        = props.user === Chat.session.user
 		const read      = !isEmpty(props.seen) && !props.seen.includes(Chat.session.user)
@@ -2244,6 +2247,19 @@ class extends Component {
 								:
 								h("div", { dangerouslySetInnerHTML: { __html: nl2br(content) } })
 						),
+						!isEmpty(links) ?
+							h("div", { class: "chat-bubble-links" },
+								h("hr", { style: `margin: 5px 0; border-color: #fff` }),
+								h("ol", { style: "margin: 0px; font-size: 12px; margin-left: -25px;"},
+									links.map(link => 
+										h("li", null, 
+											h("a", { href: link.url, target: "_blank" },
+												link.title
+											)
+										)
+									)
+								)
+							) : null,
 						!isEmpty(actions) ?
 							h("div", null,
 								h("hr", { style: `margin: 5px 0; border-color: #fff` }),
