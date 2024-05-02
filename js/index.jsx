@@ -10,7 +10,8 @@ import moment from 'moment';
 // import request from './request';
 import {
 	pluralize,
-	nl2br
+	nl2br,
+	linkify
 } from './util/string'
 import {
 	head,
@@ -1928,7 +1929,6 @@ class extends Component {
 						h(Chat.chat.component.ChatList, {
 							messages: props.messages, incoming, welcomeMessage, samplePrompts,
 							onClickAction: async action => {
-								console.log("action", action);
 								this.sendMessage(action)
 							}
 						})
@@ -1965,7 +1965,6 @@ class extends Component {
 								Chat.chat.message.typing(props.name)
 							},
 							onsubmit: async (message) => {
-								console.log("submitted", message)
 								this.sendMessage(message);
 							},
 							hint: hints
@@ -2099,8 +2098,6 @@ class extends Component {
 		var messages = [ ]
 		for (var i   = 0 ; i < this.props.messages.length ; ++i) {
 			var   message   = this.props.messages[i]
-			console.log(message)
-
 			if ( i === 0 || !datetime.equal(message.creation, this.props.messages[i - 1].creation, 'day') )
 				messages.push({ type: "Notification", content: message.creation.format('MMMM D YYYY, hh:mm A'),
 					prompts: message.prompts, links: message.links })
@@ -2222,7 +2219,7 @@ class extends Component {
 		const read      = !isEmpty(props.seen) && !props.seen.includes(Chat.session.user)
 
 		if ( type == "Loader" ) {
-			content  = `<img src="${iconThreeDots}" style="width: 25px; height: 25px;"/>`
+			content  = `🤔 <img src="${iconThreeDots}" style="width: 25px; height: 25px;"/>`
 		} else {
 			creation = props.creation.format('hh:mm A')
 		}
@@ -2245,7 +2242,7 @@ class extends Component {
 									h(Chat.components.FontAwesome, { type: "file", fixed: true }), ` ${content.name}`
 								)
 								:
-								h("div", { dangerouslySetInnerHTML: { __html: nl2br(content) } })
+								h("div", { dangerouslySetInnerHTML: { __html: linkify(nl2br(content)) } })
 						),
 						!isEmpty(links) ?
 							h("div", { class: "chat-bubble-links" },
@@ -2344,7 +2341,7 @@ class extends Component {
 							// You should stop writing one-liners! >_>
 							const replace = token.replace(hint.match, hint.content ? hint.content(item) : item)
 							const content = `${sliced.join(" ")} ${replace}`.trim()
-							item          = { component: hint.component(item), content: content }
+							item = { component: hint.component(item), content: content }
 
 							return item
 						}).slice(0, hint.max || 5)
