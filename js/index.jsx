@@ -2250,7 +2250,7 @@ class extends Component {
 						!isEmpty(links) ?
 							h("div", { class: "chat-bubble-links" },
 								h("hr", { style: `margin: 5px 0; border-color: #fff` }),
-								h("ol", { style: "margin: 0px; font-size: 12px; margin-left: -25px;"},
+								h("ol", { style: "margin: 0px; font-size: 12px"},
 									links.map(link => 
 										h("li", null, 
 											h("a", { href: link.url, target: "_blank" },
