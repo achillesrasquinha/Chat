@@ -1545,7 +1545,7 @@ class extends Component {
 
 		return !state.destroy ?
 		(
-			h("div", { class: "Chat-chat-popper", style: !props.target ? { "margin-bottom": "90px" } : null },
+			h("div", { class: "Chat-chat-popper", style: !props.target ? { "margin-bottom": "100px" } : null },
 				!props.target ?
 					h(Chat.components.FAB, {
 						  class: "Chat-fab",
@@ -1980,7 +1980,13 @@ class extends Component {
 		const { props } = this;
 		const { name, onQuery, botName }  = props;
 
-		Chat.chat.message.send(name, message);
+		if ( typeof message === 'string' ) {
+			message = {
+				"type": "text", "query": message, "key": message
+			}
+		}
+
+		Chat.chat.message.send(name, message.query);
 
 		if ( onQuery ) {
 			this.setState({ incoming: true });
@@ -2150,7 +2156,8 @@ class extends Component {
 	render ( ) {
 		const { props } = this
 		const { content, actions, links,
-			prompts, user, type, room_type, onClickAction } = props
+			prompts, user, type, room_type, onClickAction,
+			botFeedback, botCopyMessage } = props
 
 		const me        = user === Chat.session.user
 
@@ -2173,7 +2180,9 @@ class extends Component {
 							...props,
 							actions: actions || prompts,
 							links,
-							onClickAction
+							onClickAction,
+							botFeedback,
+							botCopyMessage
 						})
 					)
 			)
@@ -2224,6 +2233,14 @@ class extends Component {
 			creation = props.creation.format('hh:mm A')
 		}
 
+		if ( !isEmpty(actions) ) {
+			for ( let i = 0 ; i < actions.length ; ++i ) {
+				if ( typeof actions[i] === "string" ) {
+					actions[i] = { "type": "text", query: actions[i], key: actions[i] }
+				}
+			}
+		}
+
 		return (
 			h("div",{class:`chat-bubble ${props.groupable ? "chat-groupable" : ""} chat-bubble-${me ? "r" : "l"}`,
 				onclick: this.onclick,
@@ -2261,7 +2278,7 @@ class extends Component {
 							h("div", null,
 								h("hr", { style: `margin: 5px 0; border-color: #fff` }),
 								h("div",{class:"chat-bubble-actions btn-group-vertical"},
-									actions.map(action => {
+									actions.map((action) => {
 										return (
 											h(Chat.components.Button, {
 												class: "btn-xs",
@@ -2272,7 +2289,7 @@ class extends Component {
 													}
 												}
 											},
-												h("small", null, action)
+												h("small", null, action.query)
 											)
 										)
 									})
@@ -2534,6 +2551,10 @@ Chat.chat.render = ({
 	onQuery  = null,
 
 	botName  = null,
+
+	botFeedback	   = null,
+	botCopyMessage = null,
+
 	roomName = null,
 
 	welcomeMessage = null,
@@ -2609,7 +2630,7 @@ Chat.chat.render = ({
 				const renderArgs = {
 					roomName, botName, onQuery, active,
 					welcomeMessage, samplePrompts, roomFooter,
-					inputPlaceholder
+					inputPlaceholder, botFeedback, botCopyMessage
 				}
 
 				if ( !token ) {
@@ -2658,6 +2679,10 @@ const setup = ({
 	onQuery  = null,
 
 	botName  = null,
+
+	botFeedback	   = null,
+	botCopyMessage = null,
+
 	roomName = null,
 
 	welcomeMessage = null,
@@ -2700,6 +2725,10 @@ const setup = ({
 			onQuery,
 
 			botName,
+			
+			botFeedback,
+			botCopyMessage,
+
 			roomName,
 
 			welcomeMessage,
@@ -2740,6 +2769,10 @@ Chat.init = ({
 	active   = true,
 	onQuery  = null,
 	botName  = null,
+
+	botFeedback    = null,
+	botCopyMessage = null,
+
 	roomName = null,
 
 	welcomeMessage 	 = null,
@@ -2749,8 +2782,9 @@ Chat.init = ({
 
 	inputPlaceholder = null,
 } = { }) => {
-	setup({ user, active, onQuery, botName, roomName, welcomeMessage,
-		samplePrompts, roomFooter, inputPlaceholder });
+	setup({ user, active, onQuery, botName, botFeedback, botCopyMessage,
+		roomName, welcomeMessage, samplePrompts, roomFooter, inputPlaceholder
+	});
 };
 
 export default Chat;

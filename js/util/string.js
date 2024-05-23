@@ -47,7 +47,10 @@ export const pluralize = (word, count = 0, suffix = 's') => `${word}${count === 
  */
 export const capitalize = word => `${word.charAt(0).toUpperCase()}${word.slice(1)}`
 
-export const nl2br 	 = string => string.replace(/\n/g, '<br>');
+export const nl2br 	 = string => {
+	string.replace(/\n/g, '<br>');
+	return string
+}
 
 export const linkify = string => {
 	let found = string.match(/(https?:\/\/[^\s]+)/g);
