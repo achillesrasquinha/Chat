@@ -1332,8 +1332,8 @@ class extends Component {
 	render () {
 		const me = this;
 		const { props, state } = this
-		const { onQuery, roomName, botName, active, welcomeMessage, samplePrompts,
-			roomFooter, inputPlaceholder } = props;
+		const { onQuery, roomName, botName, active, helpMessage, welcomeMessage,
+			samplePrompts, roomFooter, inputPlaceholder } = props;
 
 		const ActionBar        = h(Chat.Chat.Widget.ActionBar, {
 			placeholder: __("Search or Create a New Chat"),
@@ -1459,7 +1459,8 @@ class extends Component {
 		}})
 
 		const component  = layout === Chat.Chat.Layout.POPPER ?
-			h(Chat.Chat.Widget.Popper, { active, heading: ActionBar, page: state.room.name && Room, target: props.target,
+			h(Chat.Chat.Widget.Popper, { active, helpMessage,
+				heading: ActionBar, page: state.room.name && Room, target: props.target,
 				toggle: (t) => this.setState({ toggle: t }) },
 				RoomList
 			)
@@ -1507,13 +1508,14 @@ class extends Component {
 	}
 
 	setup (props) {
-		const { active } = props;
+		const { active, helpMessage } = props;
 
 		this.toggle = this.toggle.bind(this)
 
 		this.state  = {
 			...Chat.Chat.Widget.Popper.defaultState,
-			active
+			active: !isEmpty(helpMessage) ? false : active,
+			hasClickedOnce: false
 		}
 
 		if ( props.target )
@@ -1523,15 +1525,22 @@ class extends Component {
 	}
 
 	toggle  (active) {
+		const { props, state } = this
+		let { hasClickedOnce } =state
+		
 		let toggle
 		if ( arguments.length === 1 )
 			toggle = active
 		else
-			toggle = this.state.active ? false : true
+			toggle = state.active ? false : true
 
-		this.setState({ active: toggle })
+		if ( !hasClickedOnce ) {
+			hasClickedOnce = true
+		}
 
-		this.props.toggle(toggle)
+		this.setState({ active: toggle, hasClickedOnce })
+
+		props.toggle(toggle)
 	}
 
 	componentDidMount ( ) {
@@ -1542,10 +1551,17 @@ class extends Component {
 
 	render  ( )  {
 		const { props, state } = this
+		const { helpMessage } = props;
+		const { hasClickedOnce } = state
 
 		return !state.destroy ?
 		(
 			h("div", { class: "Chat-chat-popper", style: !props.target ? { "margin-bottom": "100px" } : null },
+				helpMessage && !hasClickedOnce ? 
+					h(Chat.chat.component.ChatBubble, {
+						content: helpMessage,
+						style: `max-width: 250px; padding: 10px; border-radius: 5px; box-shadow: 0 3px 3px rgba(0,0,0,.25)`
+					}) : null,
 				!props.target ?
 					h(Chat.components.FAB, {
 						  class: "Chat-fab",
@@ -2222,7 +2238,9 @@ class extends Component {
 
 	render  ( ) {
 		const { props }  = this;
-		let { content, actions, links, onClickAction, type, creation } = props;
+		let { content, actions, links, onClickAction, type, creation, style } = props;
+
+		style = style || ""
 
 		const me        = props.user === Chat.session.user
 		const read      = !isEmpty(props.seen) && !props.seen.includes(Chat.session.user)
@@ -2230,7 +2248,9 @@ class extends Component {
 		if ( type == "Loader" ) {
 			content  = `🤔 <img src="${iconThreeDots}" style="width: 25px; height: 25px;"/>`
 		} else {
-			creation = props.creation.format('hh:mm A')
+			if ( creation ) {
+				creation = creation.format('hh:mm A')
+			}
 		}
 
 		if ( !isEmpty(actions) ) {
@@ -2244,7 +2264,7 @@ class extends Component {
 		return (
 			h("div",{class:`chat-bubble ${props.groupable ? "chat-groupable" : ""} chat-bubble-${me ? "r" : "l"}`,
 				onclick: this.onclick,
-				style: `min-width: ${type == "Loader" ? "0" : "20%"}`},
+				style: `min-width: ${type == "Loader" ? "0" : "20%"}; ${style}`},
 				// props.room_type === "Group" && !me?
 				h("div",{class:"chat-bubble-author"},
 					h("a", { onclick: () => { Chat.set_route(`Form/User/${props.user}`) } },
@@ -2555,8 +2575,9 @@ Chat.chat.render = ({
 	botFeedback	   = null,
 	botCopyMessage = null,
 
-	roomName = null,
+	roomName 	   = null,
 
+	helpMessage    = null,
 	welcomeMessage = null,
 	samplePrompts  = null,
 
@@ -2628,7 +2649,7 @@ Chat.chat.render = ({
 				}
 
 				const renderArgs = {
-					roomName, botName, onQuery, active,
+					roomName, botName, onQuery, active, helpMessage,
 					welcomeMessage, samplePrompts, roomFooter,
 					inputPlaceholder, botFeedback, botCopyMessage
 				}
@@ -2685,6 +2706,7 @@ const setup = ({
 
 	roomName = null,
 
+	helpMessage    = null,
 	welcomeMessage = null,
 	samplePrompts  = null,
 
@@ -2731,6 +2753,7 @@ const setup = ({
 
 			roomName,
 
+			helpMessage,
 			welcomeMessage,
 			samplePrompts,
 
@@ -2775,6 +2798,7 @@ Chat.init = ({
 
 	roomName = null,
 
+	helpMessage 	 = null,
 	welcomeMessage 	 = null,
 	samplePrompts  	 = null,
 
@@ -2783,7 +2807,8 @@ Chat.init = ({
 	inputPlaceholder = null,
 } = { }) => {
 	setup({ user, active, onQuery, botName, botFeedback, botCopyMessage,
-		roomName, welcomeMessage, samplePrompts, roomFooter, inputPlaceholder
+		roomName, helpMessage, welcomeMessage, samplePrompts, roomFooter,
+		inputPlaceholder
 	});
 };
 
