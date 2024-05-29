@@ -5,9 +5,7 @@
 // Fuck semicolons - https://mislav.net/2010/05/semicolons
 
 import { h, Component, render } from 'preact'
-import moment from 'moment';
 
-// import request from './request';
 import {
 	pluralize,
 	nl2br,
@@ -32,7 +30,7 @@ import Logger from './log'
 
 import iconThreeDots from './assets/three-dots.svg';
 
-import Fuse   from 'fuse.js'
+import Fuse from 'fuse.js'
 
 import $ from 'jquery'
 import 'bootstrap/dist/css/bootstrap.min.css'
@@ -719,19 +717,6 @@ Chat.chat.message.on.update = function (fn) {
 	Chat.realtime.on("Chat.chat.message:update", r => fn(r.message, r.data))
 }
 
-Chat.chat.pretty_datetime   = function (date) {
-	const today    = moment()
-	const instance = date.moment
-
-	if ( today.isSame(instance, "d") )
-		return instance.format("hh:mm A")
-	else
-	if ( today.isSame(instance, "week") )
-		return instance.format("dddd")
-	else
-		return instance.format("DD/MM/YYYY")
-}
-
 // Chat.chat.sound
 Chat.provide('chat.sound')
 
@@ -885,9 +870,16 @@ class extends Chat.components.Button {
 		const { props } = this
 		const size      = Chat.components.FAB.SIZE[props.size]
 
+		let icon = props.icon;
+		if ( icon && icon.includes("fa") ) {
+			icon = h("i", { class: icon })
+		} else {
+			icon = h("span", { dangerouslySetInnerHTML: { __html: icon } })
+		}
+
 		return (
 			h(Chat.components.Button, { ...props, class: `${props.class} ${size && size.class}`},
-				h("i", { class: props.icon })
+				icon
 			)
 		)
 	}
@@ -1332,8 +1324,8 @@ class extends Component {
 	render () {
 		const me = this;
 		const { props, state } = this
-		const { onQuery, roomName, botName, active, helpMessage, welcomeMessage,
-			samplePrompts, roomFooter, inputPlaceholder } = props;
+		const { onQuery, roomName, botName, active, fabIcon, helpMessage,
+			welcomeMessage, samplePrompts, roomFooter, inputPlaceholder } = props;
 
 		const ActionBar        = h(Chat.Chat.Widget.ActionBar, {
 			placeholder: __("Search or Create a New Chat"),
@@ -1440,7 +1432,7 @@ class extends Component {
 
 		const RoomList   = isEmpty(rooms) && !state.query ?
 			h("div", { class: "vcenter" },
-				h("div", { class: "text-center text-extra-muted" },
+				h("div", { class: "text-center text-muted-extra" },
 					h("p","",__("You don't have any messages yet."))
 				)
 			)
@@ -1459,7 +1451,7 @@ class extends Component {
 		}})
 
 		const component  = layout === Chat.Chat.Layout.POPPER ?
-			h(Chat.Chat.Widget.Popper, { active, helpMessage,
+			h(Chat.Chat.Widget.Popper, { active, fabIcon, helpMessage,
 				heading: ActionBar, page: state.room.name && Room, target: props.target,
 				toggle: (t) => this.setState({ toggle: t }) },
 				RoomList
@@ -1478,7 +1470,7 @@ class extends Component {
 			)
 
 		return (
-			h("div", { class: "Chat-chat" },
+			h("div", { class: `Chat-chat` },
 				component
 			)
 		)
@@ -1551,7 +1543,7 @@ class extends Component {
 
 	render  ( )  {
 		const { props, state } = this
-		const { helpMessage } = props;
+		let { helpMessage, fabIcon } = props;
 		const { hasClickedOnce } = state
 
 		return !state.destroy ?
@@ -1560,12 +1552,12 @@ class extends Component {
 				helpMessage && !hasClickedOnce ? 
 					h(Chat.chat.component.ChatBubble, {
 						content: helpMessage,
-						style: `max-width: 250px; padding: 10px; border-radius: 5px; box-shadow: 0 3px 3px rgba(0,0,0,.25)`
+						class: "chat-bubble-notification"
 					}) : null,
 				!props.target ?
 					h(Chat.components.FAB, {
 						  class: "Chat-fab",
-						   icon: state.active ? "fa fa-fw fa-times" : "font-heavy fa fa-fw fa-comment",
+						   icon: state.active ? "fa fa-fw fa-times" : fabIcon ? fabIcon : `font-heavy fa fa-fw fa-comment`,
 						   size: isMobile() ? null : "large",
 						   type: "brand",
 						onclick: () => this.toggle(),
@@ -1748,7 +1740,7 @@ class extends Component {
 
 		let is_unread = false
 		if ( props.last_message ) {
-			item.timestamp = Chat.chat.pretty_datetime(props.last_message.creation)
+			item.timestamp = datetime.prettyDateTime(props.last_message.creation)
 			is_unread = !props.last_message.seen.includes(Chat.session.user)
 		}
 
@@ -1826,17 +1818,19 @@ class extends Component {
 	constructor (props) {
 		super (props)
 
-		this.sendMessage = this.sendMessage.bind(this)
+		this.setProgressMessage = this.setProgressMessage.bind(this)
+		this.sendMessage 		= this.sendMessage.bind(this)
 		
 		this.state = {
-			incoming: false
+			incoming: false,
+			progressMessage: null
 		}
 	}
 
 	render ( ) {
 		const { props, state } = this
 		const { roomFooter, welcomeMessage, samplePrompts,
-			inputPlaceholder } = props;
+			inputPlaceholder, userImage } = props;
 		const { incoming } = state;
 
 		const hints =
@@ -1856,7 +1850,7 @@ class extends Component {
 					return (
 						h(Chat.Chat.Widget.MediaProfile, {
 							title: Chat.user.full_name(item),
-							image: Chat.user.image(item),
+							image: userImage || Chat.user.image(item),
 							 size: "small"
 						})
 					)
@@ -1943,7 +1937,9 @@ class extends Component {
 				props.name ?
 					!isEmpty(props.messages) || welcomeMessage?
 						h(Chat.chat.component.ChatList, {
-							messages: props.messages, incoming, welcomeMessage, samplePrompts,
+							messages: props.messages, incoming,
+							progressMessage: state.progressMessage,
+							welcomeMessage, samplePrompts,
 							onClickAction: async action => {
 								this.sendMessage(action)
 							}
@@ -1951,7 +1947,7 @@ class extends Component {
 						:
 						h("div", { class: "panel-body", style: { "height": "100%" } },
 							h("div", { class: "vcenter" },
-								h("div", { class: "text-center text-extra-muted" },
+								h("div", { class: "text-center text-muted-extra" },
 									h(Chat.components.Octicon, { type: "comment-discussion", style: "font-size: 48px" }),
 									h("p","",__("Start a conversation."))
 								)
@@ -1960,7 +1956,7 @@ class extends Component {
 					:
 					h("div", { class: "panel-body", style: { "height": "100%" } },
 						h("div", { class: "vcenter" },
-							h("div", { class: "text-center text-extra-muted" },
+							h("div", { class: "text-center text-muted-extra" },
 								h(Chat.components.Octicon, { type: "comment-discussion", style: "font-size: 125px" }),
 								h("p","",__("Select a chat to start messaging."))
 							)
@@ -1992,6 +1988,12 @@ class extends Component {
 		)
 	}
 
+	setProgressMessage (message) {
+		this.setState({
+			progressMessage: message
+		})
+	}
+
 	async sendMessage (message) {
 		const { props } = this;
 		const { name, onQuery, botName }  = props;
@@ -2007,7 +2009,11 @@ class extends Component {
 		if ( onQuery ) {
 			this.setState({ incoming: true });
 
+			message = { ...message, "progress": this.setProgressMessage }
 			const response = await onQuery(message);
+			
+			this.setProgressMessage(null);
+
 			if ( response && response.message ) {
 				Chat.chat.message.send(name, response.message, {
 					user: botName || "Bot",
@@ -2114,7 +2120,7 @@ class extends Component {
 
 	render ( ) {
 		const { props }    = this;
-		const { incoming, welcomeMessage, samplePrompts,
+		const { incoming, progressMessage, welcomeMessage, samplePrompts,
 			onClickAction } = props;
 
 		var messages = [ ]
@@ -2143,9 +2149,11 @@ class extends Component {
 				!isEmpty(messages) ?
 					h("span", null,
 						components,
-						incoming ? h(Chat.chat.component.ChatList.Item, {
-							type: "Loader"
-						}) : null
+						incoming ? 
+							h(Chat.chat.component.ChatList.Item, {
+								type: "Loader",
+								content: progressMessage
+							}) : null
 					)
 					:
 					null
@@ -2246,7 +2254,7 @@ class extends Component {
 		const read      = !isEmpty(props.seen) && !props.seen.includes(Chat.session.user)
 
 		if ( type == "Loader" ) {
-			content  = `🤔 <img src="${iconThreeDots}" style="width: 25px; height: 25px;"/>`
+			content  = `${content} <img src="${iconThreeDots}" style="width: 25px; height: 25px;"/>`
 		} else {
 			if ( creation ) {
 				creation = creation.format('hh:mm A')
@@ -2262,7 +2270,7 @@ class extends Component {
 		}
 
 		return (
-			h("div",{class:`chat-bubble ${props.groupable ? "chat-groupable" : ""} chat-bubble-${me ? "r" : "l"}`,
+			h("div",{class:`chat-bubble ${props.groupable ? "chat-groupable" : ""} chat-bubble-${me ? "r" : "l"} ${props.class}`,
 				onclick: this.onclick,
 				style: `min-width: ${type == "Loader" ? "0" : "20%"}; ${style}`},
 				// props.room_type === "Group" && !me?
@@ -2301,7 +2309,7 @@ class extends Component {
 									actions.map((action) => {
 										return (
 											h(Chat.components.Button, {
-												class: "btn-xs",
+												class: "btn-xs chat-btn-action",
 												onclick: e => {
 													e.preventDefault()
 													if ( onClickAction ) {
@@ -2565,6 +2573,8 @@ Chat.notify = (string, options) => {
 }
 
 Chat.chat.render = ({
+	selector = null,
+
 	render   = true,
 	active   = true,
 	force    = false,
@@ -2576,6 +2586,8 @@ Chat.chat.render = ({
 	botCopyMessage = null,
 
 	roomName 	   = null,
+
+	fabIcon 	   = null,
 
 	helpMessage    = null,
 	welcomeMessage = null,
@@ -2616,7 +2628,7 @@ Chat.chat.render = ({
 
 	// Avoid re-renders. Once is enough.
 	if ( !Chat.chatter || force ) {
-		Chat.chatter = new Chat.Chat({
+		Chat.chatter = new Chat.Chat(selector, {
 			target: desk ? '.Chat-chat-toggle' : null
 		})
 
@@ -2649,7 +2661,8 @@ Chat.chat.render = ({
 				}
 
 				const renderArgs = {
-					roomName, botName, onQuery, active, helpMessage,
+					selector,
+					roomName, botName, onQuery, active, fabIcon, helpMessage,
 					welcomeMessage, samplePrompts, roomFooter,
 					inputPlaceholder, botFeedback, botCopyMessage
 				}
@@ -2695,6 +2708,8 @@ Chat.realtime.on  = (event, callback) => {
 };
 
 const setup = ({
+	selector = null,
+
 	user     = null,
 	active   = true,
 	onQuery  = null,
@@ -2706,6 +2721,8 @@ const setup = ({
 
 	roomName = null,
 
+	fabIcon 	   = null,
+
 	helpMessage    = null,
 	welcomeMessage = null,
 	samplePrompts  = null,
@@ -2713,6 +2730,8 @@ const setup = ({
 	roomFooter     = null,
 	
 	inputPlaceholder = null,
+
+	userImage        = null,
 } = { }) => {
 	const logger = Logger.get('Chat')
 	
@@ -2742,6 +2761,8 @@ const setup = ({
 		})
 
 		Chat.chat.render({
+			selector,
+
 			render: true,
 			active,
 			onQuery,
@@ -2753,13 +2774,17 @@ const setup = ({
 
 			roomName,
 
+			fabIcon,
+
 			helpMessage,
 			welcomeMessage,
 			samplePrompts,
 
 			roomFooter,
 			
-			inputPlaceholder
+			inputPlaceholder,
+
+			userImage
 		})
 	} else {
 		// Website Settings
@@ -2788,6 +2813,8 @@ const setup = ({
 }
 
 Chat.init = ({
+	selector = null,
+
 	user     = null,
 	active   = true,
 	onQuery  = null,
@@ -2798,6 +2825,8 @@ Chat.init = ({
 
 	roomName = null,
 
+	fabIcon 		 = null,
+
 	helpMessage 	 = null,
 	welcomeMessage 	 = null,
 	samplePrompts  	 = null,
@@ -2805,10 +2834,12 @@ Chat.init = ({
 	roomFooter     	 = null,
 
 	inputPlaceholder = null,
+
+	userImage        = null,
 } = { }) => {
-	setup({ user, active, onQuery, botName, botFeedback, botCopyMessage,
-		roomName, helpMessage, welcomeMessage, samplePrompts, roomFooter,
-		inputPlaceholder
+	setup({ selector, user, active, onQuery, botName, botFeedback,
+		botCopyMessage, roomName, fabIcon, helpMessage, welcomeMessage,
+		samplePrompts, roomFooter, inputPlaceholder, userImage
 	});
 };
 

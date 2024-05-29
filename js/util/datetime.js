@@ -100,6 +100,19 @@ export const compare = (a, b) => {
 
 export const now = () => new datetime()
 
+export const prettyDateTime = date => {
+	const today    = dayjs()
+	const instance = dayjs(date)
+
+	if ( today.isSame(instance, "d") )
+		return instance.format("hh:mm A")
+	else
+	if ( today.isSame(instance, "week") )
+		return instance.format("dddd")
+	else
+		return instance.format("DD/MM/YYYY")
+}
+
 export default {
     datetime,
 	equal,
