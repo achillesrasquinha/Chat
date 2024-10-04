@@ -512,7 +512,7 @@ p {
     $color-brand-primary: linear-gradient(130deg, rgb(139, 70, 198) 0%, rgb(0, 119, 217) 100%);
     $color-brand-primary-dark: #015AA0;
 
-    $color-brand-secondary: #6C5CE7;
+    $color-brand-secondary: $color-brand-primary;
     $color-brand-secondary-dark: #5C6FE7;
 
     .panel-brand {
@@ -530,8 +530,8 @@ p {
         color: $color-white;
 
         &:hover {
-            background-color: darken($color-brand-secondary, 10%);
-            border-color: darken($color-brand-secondary, 10%);
+            background-color: $color-brand-secondary;
+            border-color: $color-brand-secondary;
             color: $color-white;
         }
     }
