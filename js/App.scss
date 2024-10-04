@@ -509,7 +509,7 @@ p {
     }
 
     $color-white: #fff;
-    $color-brand-primary: #0176D3;
+    $color-brand-primary: linear-gradient(130deg, rgb(139, 70, 198) 0%, rgb(0, 119, 217) 100%);
     $color-brand-primary-dark: #015AA0;
 
     $color-brand-secondary: #6C5CE7;
