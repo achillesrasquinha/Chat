@@ -1470,7 +1470,7 @@ class extends Component {
 			)
 
 		return (
-			h("div", { class: `Chat-chat` },
+			h("div", { class: `Chat-chat bootstrap-scoped` },
 				component
 			)
 		)

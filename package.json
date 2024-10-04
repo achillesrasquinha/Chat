@@ -4,10 +4,10 @@
         "start": "NODE_ENV=development npx webpack serve"
     },
     "devDependencies": {
+        "@babel/core": "^7.23.1",
         "@babel/preset-env": "^7.23.6",
         "@babel/preset-react": "^7.23.3",
         "@babel/register": "^7.22.15",
-        "@babel/core": "^7.23.1",
         "babel-loader": "^9.1.3",
         "css-loader": "^6.8.1",
         "sass": "^1.69.5",
