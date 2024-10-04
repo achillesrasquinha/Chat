@@ -1794,7 +1794,7 @@ class extends Component {
 			h("div", { class: "media", style: position.class === "media-right" ? { "text-align": "right" } : null },
 				// position.class === "media-left"  ? avatar : null,
 				h("div", { class: "media-body" },
-					h("div", { class: "media-heading ellipsis small", style: `font-size: 14px; max-width: ${props.width_title || "100%"} display: inline-block` }, props.title),
+					h("div", { class: "media-heading ellipsis small", style: `font-size: 18px; max-width: ${props.width_title || "100%"} display: inline-block` }, props.title),
 					props.content  ? h("div","",h("small","",props.content))  : null,
 					props.subtitle ? h("div",{ class: "media-subtitle small" },h("small", { class: "text-muted" }, props.subtitle)) : null
 				),
@@ -1965,7 +1965,7 @@ class extends Component {
 				props.name ?
 					h("div", { class: "chat-room-footer" },
 						roomFooter ?
-							h("div", { class: "chat-room-footer-banner panel panel-default" },
+							h("div", { class: "chat-room-footer-banner panel panel-default", style: "margin: 0px !important;" },
 								h("div", { class: "panel-body" },
 									h("div", { dangerouslySetInnerHTML: { __html: roomFooter } })
 								)
@@ -2281,7 +2281,7 @@ class extends Component {
 				), // : null,
 				h("div",{class:"chat-bubble-content",
 					style: `margin-bottom: ${type == "Loader" ? "0" : "5px"}`},
-						h("small","",
+						h("div","",
 							props.type === "File" ?
 								h("a", { class: "no-decoration", href: content.path, target: "_blank" },
 									h(Chat.components.FontAwesome, { type: "file", fixed: true }), ` ${content.name}`
