@@ -519,18 +519,18 @@ p {
         border-color: $color-brand-secondary-dark;
 
         .panel-heading {
-            background-color: $color-brand-secondary;
+            background: $color-brand-secondary;
             color: $color-white;
         }
     }
 
     .btn-brand {
-        background-color: $color-brand-secondary;
+        background: $color-brand-secondary;
         border-color: $color-brand-secondary-dark;
         color: $color-white;
 
         &:hover {
-            background-color: $color-brand-secondary;
+            background: $color-brand-secondary;
             border-color: $color-brand-secondary;
             color: $color-white;
         }
@@ -541,7 +541,7 @@ p {
     }
 
     .chat-bubble-notification {
-        background-color: $color-brand-secondary !important;
+        background: $color-brand-secondary !important;
         border-color: $color-brand-secondary-dark !important;
         color: $color-white !important;
         max-width: 250px;
