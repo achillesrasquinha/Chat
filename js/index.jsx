@@ -673,9 +673,12 @@ Chat.chat.message.typing = function (room, user) {
 }
 
 Chat.chat.message.send   = function (room, message, { type = "Content",
-	user = null, prompts = null, links = null } = { }) {
+	user = null, prompts = null, promptsHeader = null,
+	links = null, linksHeader = null, stream = false, onClickPrompt = null } = { }) {
 	Chat.call("Chat.chat.doctype.chat_message.chat_message.send",
-		{ user: user || Chat.session.user, room: room, content: message, type, prompts, links })
+		{ user: user || Chat.session.user, room: room, content: message,
+			type, prompts, promptsHeader, links, linksHeader, stream,
+			onClickPrompt })
 }
 
 Chat.chat.message.update = function (message, update, fn) {
@@ -1017,7 +1020,7 @@ class {
 	 * @param {object} options  - Optional configurations.
 	 */
 	constructor (selector, options) {
-		if ( !(typeof selector === "string" || selector instanceof $ || selector instanceof HTMLElement) ) {
+		if ( !(typeof selector === "string" || (window.jQuery && selector instanceof $) || selector instanceof HTMLElement) ) {
 			options  = selector
 			selector = null
 		}
@@ -1325,7 +1328,7 @@ class extends Component {
 		const me = this;
 		const { props, state } = this
 		const { onQuery, roomName, botName, active, fabIcon, helpMessage,
-			welcomeMessage, samplePrompts, roomFooter, inputPlaceholder } = props;
+			welcomeMessage, samplePromptsHeader, samplePrompts, roomFooter, inputPlaceholder } = props;
 
 		const ActionBar        = h(Chat.Chat.Widget.ActionBar, {
 			placeholder: __("Search or Create a New Chat"),
@@ -1443,7 +1446,8 @@ class extends Component {
 				else
 					Chat.chat.room.create("Direct", room.owner, squash(room.users), ({ name }) => this.room.select(name))
 			}})
-		const Room       = h(Chat.Chat.Widget.Room, { ...state.room, onQuery, welcomeMessage, samplePrompts,
+		const Room       = h(Chat.Chat.Widget.Room, { ...state.room, onQuery, welcomeMessage, 
+			samplePromptsHeader, samplePrompts,
 			inputPlaceholder, roomName, botName, roomFooter, layout: layout, destroy: () => {
 			this.setState({
 				room: { name: null, messages: [ ] }
@@ -1829,7 +1833,7 @@ class extends Component {
 
 	render ( ) {
 		const { props, state } = this
-		const { roomFooter, welcomeMessage, samplePrompts,
+		const { roomFooter, welcomeMessage, samplePromptsHeader, samplePrompts,
 			inputPlaceholder, userImage } = props;
 		const { incoming } = state;
 
@@ -1939,7 +1943,7 @@ class extends Component {
 						h(Chat.chat.component.ChatList, {
 							messages: props.messages, incoming,
 							progressMessage: state.progressMessage,
-							welcomeMessage, samplePrompts,
+							welcomeMessage, samplePromptsHeader, samplePrompts,
 							onClickAction: async action => {
 								this.sendMessage(action)
 							}
@@ -2018,7 +2022,11 @@ class extends Component {
 				Chat.chat.message.send(name, response.message, {
 					user: botName || "Bot",
 					prompts: response.prompts,
-					links: response.links
+					promptsHeader: response.promptsHeader,
+					links: response.links,
+					linksHeader: response.linksHeader,
+					stream: response.stream,
+					onClickPrompt: response.onClickPrompt
 				})
 			}
 
@@ -2120,7 +2128,7 @@ class extends Component {
 
 	render ( ) {
 		const { props }    = this;
-		const { incoming, progressMessage, welcomeMessage, samplePrompts,
+		const { incoming, progressMessage, welcomeMessage, samplePromptsHeader, samplePrompts,
 			onClickAction } = props;
 
 		var messages = [ ]
@@ -2128,13 +2136,16 @@ class extends Component {
 			var   message   = this.props.messages[i]
 			if ( i === 0 || !datetime.equal(message.creation, this.props.messages[i - 1].creation, 'day') )
 				messages.push({ type: "Notification", content: message.creation.format('MMMM D YYYY, hh:mm A'),
-					prompts: message.prompts, links: message.links })
+					prompts: message.prompts, links: message.links, stream: message.stream,
+					onClickPrompt: message.onClickPrompt })
 
 			messages.push(message)
 		}
 
 		const components = messages
-			.map(m => h(Chat.chat.component.ChatList.Item, {...m, onClickAction }))
+			.map(m => h(Chat.chat.component.ChatList.Item, {
+				...m, onClickAction
+			}))
 
 		return (
 			h("div",{class:"chat-list list-group"},
@@ -2143,6 +2154,7 @@ class extends Component {
 						type: "Content",
 						content: welcomeMessage,
 						creation: new datetime.datetime(),
+						actionsHeader: samplePromptsHeader,
 						actions: samplePrompts,
 						onClickAction,
 					}) : null,
@@ -2152,7 +2164,7 @@ class extends Component {
 						incoming ? 
 							h(Chat.chat.component.ChatList.Item, {
 								type: "Loader",
-								content: progressMessage
+								content: progressMessage ? progressMessage : ''
 							}) : null
 					)
 					:
@@ -2179,9 +2191,9 @@ Chat.chat.component.ChatList.Item
 class extends Component {
 	render ( ) {
 		const { props } = this
-		const { content, actions, links,
-			prompts, user, type, room_type, onClickAction,
-			botFeedback, botCopyMessage } = props
+		const { content, actionsHeader, actions, links, linksHeader,
+			prompts, promptsHeader, stream, user, type, room_type, onClickAction,
+			botFeedback, botCopyMessage, onClickPrompt } = props
 
 		const me        = user === Chat.session.user
 
@@ -2202,14 +2214,63 @@ class extends Component {
 							}) : null,
 						h(Chat.chat.component.ChatBubble, {
 							...props,
+							actionsHeader: actionsHeader || promptsHeader,
 							actions: actions || prompts,
+							linksHeader,
 							links,
+							stream,
+							onClickPrompt,
 							onClickAction,
 							botFeedback,
-							botCopyMessage
+							botCopyMessage,
 						})
 					)
 			)
+		)
+	}
+}
+
+Chat.chat.component.ChatStream
+= 
+class extends Component {
+	constructor (props) {
+		super (props);
+
+		const { content }   = props;
+		this._contentTokens = content.split(" ");
+
+		this.appendToken    = this.appendToken.bind(this);
+
+		this.state = {
+			content: ""
+		}
+	}
+
+	appendToken ( ) {
+		const tokens = this._contentTokens;
+		const empty  = tokens.length === 0;
+		
+		if ( empty ) {
+			clearInterval(this.appendToken);
+		} else {
+			const next = `${this.state.content}${tokens.shift()}${empty ? "" : " "}`;
+			this.setState({ content: next });
+		}
+	}
+
+	componentDidMount ( ) {
+		setInterval(this.appendToken, 50);
+	}		
+
+	render ( ) {
+		const { content } = this.state;
+		
+		return (
+			h("div", {
+				dangerouslySetInnerHTML: {
+					__html: linkify(nl2br(content))
+				}
+			})
 		)
 	}
 }
@@ -2246,7 +2307,8 @@ class extends Component {
 
 	render  ( ) {
 		const { props }  = this;
-		let { content, actions, links, onClickAction, type, creation, style } = props;
+		let { content, actionsHeader, actions, links, linksHeader,
+			stream, onClickPrompt, onClickAction, type, creation, style } = props;
 
 		style = style || ""
 
@@ -2264,7 +2326,9 @@ class extends Component {
 		if ( !isEmpty(actions) ) {
 			for ( let i = 0 ; i < actions.length ; ++i ) {
 				if ( typeof actions[i] === "string" ) {
-					actions[i] = { "type": "text", query: actions[i], key: actions[i] }
+					actions[i] = { "type": "text", query: actions[i], key: actions[i],
+						onClickPrompt: onClickPrompt,
+					}
 				}
 			}
 		}
@@ -2287,12 +2351,16 @@ class extends Component {
 									h(Chat.components.FontAwesome, { type: "file", fixed: true }), ` ${content.name}`
 								)
 								:
-								h("div", { dangerouslySetInnerHTML: { __html: linkify(nl2br(content)) } })
+								stream ?
+									h(Chat.chat.component.ChatStream, { content })
+									:
+									h("div", { dangerouslySetInnerHTML: { __html: linkify(nl2br(content)) } })
 						),
 						!isEmpty(links) ?
 							h("div", { class: "chat-bubble-links" },
 								h("hr", { style: `margin: 5px 0; border-color: #fff` }),
-								h("ol", { style: "margin: 0px; font-size: 12px"},
+								linksHeader ? h("div", { style: `font-size: 12px; font-weight: 700` }, linksHeader) : null,
+								h("ol", { style: "margin: 0px; font-size: 12px; margin-left: -25px;"},
 									links.map(link => 
 										h("li", null, 
 											h("a", { href: link.url, target: "_blank" },
@@ -2305,13 +2373,19 @@ class extends Component {
 						!isEmpty(actions) ?
 							h("div", null,
 								h("hr", { style: `margin: 5px 0; border-color: #fff` }),
+								actionsHeader ? h("div", { style: `font-size: 12px; font-weight: 700` }, actionsHeader) : null,
 								h("div",{class:"chat-bubble-actions btn-group-vertical"},
-									actions.map((action) => {
+									actions.map((action, i) => {
 										return (
 											h(Chat.components.Button, {
 												class: "btn-xs chat-btn-action",
 												onclick: e => {
 													e.preventDefault()
+													
+													if ( action.onClickPrompt ) {
+														action.onClickPrompt(action)
+													}
+
 													if ( onClickAction ) {
 														onClickAction(action)
 													}
@@ -2591,6 +2665,7 @@ Chat.chat.render = ({
 
 	helpMessage    = null,
 	welcomeMessage = null,
+	samplePromptsHeader = null,
 	samplePrompts  = null,
 
 	roomFooter     = null,
@@ -2663,7 +2738,7 @@ Chat.chat.render = ({
 				const renderArgs = {
 					selector,
 					roomName, botName, onQuery, active, fabIcon, helpMessage,
-					welcomeMessage, samplePrompts, roomFooter,
+					welcomeMessage, samplePromptsHeader, samplePrompts, roomFooter,
 					inputPlaceholder, botFeedback, botCopyMessage
 				}
 
@@ -2725,6 +2800,7 @@ const setup = ({
 
 	helpMessage    = null,
 	welcomeMessage = null,
+	samplePromptsHeader = null,
 	samplePrompts  = null,
 
 	roomFooter     = null,
@@ -2778,6 +2854,7 @@ const setup = ({
 
 			helpMessage,
 			welcomeMessage,
+			samplePromptsHeader,
 			samplePrompts,
 
 			roomFooter,
@@ -2823,12 +2900,13 @@ Chat.init = ({
 	botFeedback    = null,
 	botCopyMessage = null,
 
-	roomName = null,
+	roomName 	   = null,
 
-	fabIcon 		 = null,
+	fabIcon 	   = null,
 
 	helpMessage 	 = null,
 	welcomeMessage 	 = null,
+	samplePromptsHeader = null,
 	samplePrompts  	 = null,
 
 	roomFooter     	 = null,
@@ -2839,6 +2917,7 @@ Chat.init = ({
 } = { }) => {
 	setup({ selector, user, active, onQuery, botName, botFeedback,
 		botCopyMessage, roomName, fabIcon, helpMessage, welcomeMessage,
+		samplePromptsHeader,
 		samplePrompts, roomFooter, inputPlaceholder, userImage
 	});
 };

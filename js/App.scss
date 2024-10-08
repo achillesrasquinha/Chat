@@ -386,6 +386,9 @@ p {
         -moz-box-shadow: 0px 0.1px 0.5px 0px rgba(0, 0, 0, 0.5);
         box-shadow: 0px 0.1px 0.5px 0px rgba(0, 0, 0, 0.5);
     }
+    .chat-list .chat-list-item .chat-bubble ul {
+        margin-left: -20px;
+    }
     .chat-list .chat-list-item .chat-bubble.chat-bubble-l {
         background-color: white;
     }
@@ -473,17 +476,15 @@ p {
 
     .chat-bubble-actions {
         margin-top: 5px;
+        width: 100%;
 
         button {
             text-align: left;
-            background-color: #BCC0C0 !important;
-            color: white;
-            font-weight: bold;
+            background-color: white !important;
         }
 
         button:hover {
-            background-color: #A5A8A8 !important;
-            color: white;
+            background-color: darken(#ECF0F1, 5%) !important;
         }
     }
 
