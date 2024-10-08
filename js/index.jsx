@@ -2364,7 +2364,7 @@ class extends Component {
 									links.map(link => 
 										h("li", null, 
 											h("a", { href: link.url, target: "_blank" },
-												link.title
+												link.title || link.url
 											)
 										)
 									)
