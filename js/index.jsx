@@ -1331,7 +1331,7 @@ class extends Component {
 	render () {
 		const me = this;
 		const { props, state } = this
-		const { onQuery, onPrompt, roomName, botName, active, fabIcon, helpMessage,
+		const { onQuery, onPrompt, roomName, roomBanner, botName, active, fabIcon, helpMessage,
 			welcomeMessage, samplePromptsHeader, samplePrompts, roomFooter, inputPlaceholder,
 			actions, onAction } = props;
 
@@ -1453,7 +1453,7 @@ class extends Component {
 			}})
 		const Room       = h(Chat.Chat.Widget.Room, { ...state.room, onQuery, onPrompt, welcomeMessage, 
 			samplePromptsHeader, samplePrompts, actions, onAction,
-			inputPlaceholder, roomName, botName, roomFooter, layout: layout, destroy: () => {
+			inputPlaceholder, roomName, roomBanner, botName, roomFooter, layout: layout, destroy: () => {
 			this.setState({
 				room: { name: null, messages: [ ] }
 			})
@@ -1638,6 +1638,8 @@ class extends Component {
 		const me               = this
 		const { props, state } = this
 		const { actions }      = props
+
+		console.log(actions)
 
 		return (
 			h("div", { class: `Chat-chat-action-bar ${props.class ? props.class : ""}` },
@@ -2073,7 +2075,7 @@ Chat.Chat.Widget.Room.Header
 class extends Component {
 	render ( ) {
 		const { props } = this;
-		let { roomName, type } = props;
+		let { roomName, roomBanner, type } = props;
 
 		const item = { }
 
@@ -2113,6 +2115,11 @@ class extends Component {
 
 		return (
 			h("div", { class: "panel-heading", style: { "height": "50px" } }, // sorry. :(
+				roomBanner ?
+					h("div", { style: `font-size: 10px;` },
+						h("div", { dangerouslySetInnerHTML: { __html: roomBanner } })
+					)
+					: null,
 				h("div", { class: "level" },
 					popper && Chat.session.user !== "Guest" ?
 						h(Chat.components.Button,{class:"btn-back",onclick:props.on_back},
@@ -2426,8 +2433,6 @@ class extends Component {
 												onclick: e => {
 													e.preventDefault()
 
-													console.log(action.onClickPrompt)
-													
 													if ( action.onClickPrompt ) {
 														action.onClickPrompt(action)
 													}
@@ -2706,6 +2711,7 @@ Chat.chat.render = ({
 	botCopyMessage = null,
 
 	roomName 	   = null,
+	roomBanner     = null,
 
 	fabIcon 	   = null,
 
@@ -2788,7 +2794,7 @@ Chat.chat.render = ({
 
 				const renderArgs = {
 					selector,
-					roomName, botName, onQuery, active, fabIcon, helpMessage,
+					roomName, roomBanner, botName, onQuery, active, fabIcon, helpMessage,
 					welcomeMessage, samplePromptsHeader, samplePrompts, roomFooter,
 					inputPlaceholder, botFeedback, botCopyMessage, userImage,
 					actions, onAction
@@ -2848,7 +2854,8 @@ const setup = ({
 	botFeedback	   = null,
 	botCopyMessage = null,
 
-	roomName = null,
+	roomName       = null,
+	roomBanner 	   = null,
 
 	fabIcon 	   = null,
 
@@ -2907,6 +2914,7 @@ const setup = ({
 			botCopyMessage,
 
 			roomName,
+			roomBanner,
 
 			fabIcon,
 
@@ -2971,6 +2979,7 @@ Chat.init = ({
 	botCopyMessage = null,
 
 	roomName 	   = null,
+	roomBanner     = null,
 
 	fabIcon 	   = null,
 
@@ -2989,7 +2998,7 @@ Chat.init = ({
 	onAction         = null,
 } = { }) => {
 	setup({ selector, user, active, onQuery, botName, botFeedback,
-		botCopyMessage, roomName, fabIcon, helpMessage, welcomeMessage,
+		botCopyMessage, roomName, roomBanner, fabIcon, helpMessage, welcomeMessage,
 		samplePromptsHeader,
 		samplePrompts, roomFooter, inputPlaceholder, userImage,
 		actions, onAction, onPrompt
