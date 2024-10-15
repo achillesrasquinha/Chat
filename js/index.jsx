@@ -33,7 +33,7 @@ import iconThreeDots from './assets/three-dots.svg';
 import Fuse from 'fuse.js'
 
 import $ from 'jquery'
-import 'bootstrap/dist/css/bootstrap.min.css'
+import './bootstrap.css'
 
 // import './socketio_client'
 
@@ -1108,6 +1108,10 @@ class {
 
 		return this
 	}
+
+	open ( ) {
+		
+	}
 }
 Chat.Chat.Layout
 =
@@ -1327,8 +1331,9 @@ class extends Component {
 	render () {
 		const me = this;
 		const { props, state } = this
-		const { onQuery, roomName, botName, active, fabIcon, helpMessage,
-			welcomeMessage, samplePromptsHeader, samplePrompts, roomFooter, inputPlaceholder } = props;
+		const { onQuery, onPrompt, roomName, botName, active, fabIcon, helpMessage,
+			welcomeMessage, samplePromptsHeader, samplePrompts, roomFooter, inputPlaceholder,
+			actions, onAction } = props;
 
 		const ActionBar        = h(Chat.Chat.Widget.ActionBar, {
 			placeholder: __("Search or Create a New Chat"),
@@ -1446,8 +1451,8 @@ class extends Component {
 				else
 					Chat.chat.room.create("Direct", room.owner, squash(room.users), ({ name }) => this.room.select(name))
 			}})
-		const Room       = h(Chat.Chat.Widget.Room, { ...state.room, onQuery, welcomeMessage, 
-			samplePromptsHeader, samplePrompts,
+		const Room       = h(Chat.Chat.Widget.Room, { ...state.room, onQuery, onPrompt, welcomeMessage, 
+			samplePromptsHeader, samplePrompts, actions, onAction,
 			inputPlaceholder, roomName, botName, roomFooter, layout: layout, destroy: () => {
 			this.setState({
 				room: { name: null, messages: [ ] }
@@ -1474,7 +1479,7 @@ class extends Component {
 			)
 
 		return (
-			h("div", { class: `Chat-chat bootstrap-scoped` },
+			h("div", { class: `Chat-chat bootstrap-scope` },
 				component
 			)
 		)
@@ -1522,7 +1527,7 @@ class extends Component {
 
 	toggle  (active) {
 		const { props, state } = this
-		let { hasClickedOnce } =state
+		let { hasClickedOnce } = state
 		
 		let toggle
 		if ( arguments.length === 1 )
@@ -1542,6 +1547,14 @@ class extends Component {
 	componentDidMount ( ) {
 		$(document.body).on('click', '.page-container, .Chat-chat-close', ({ currentTarget }) => {
 			this.toggle(false)
+		})
+
+		Chat.realtime.on("Chat.chat.chatter:toggle", ({ data: { toggle }}) => {
+			if ( toggle !== null ) {
+				this.toggle(toggle)
+			} else {
+				this.toggle()
+			}
 		})
 	}
 
@@ -1798,7 +1811,7 @@ class extends Component {
 			h("div", { class: "media", style: position.class === "media-right" ? { "text-align": "right" } : null },
 				// position.class === "media-left"  ? avatar : null,
 				h("div", { class: "media-body" },
-					h("div", { class: "media-heading ellipsis small", style: `font-size: 18px; max-width: ${props.width_title || "100%"} display: inline-block` }, props.title),
+					h("div", { class: "media-heading ellipsis small", style: `font-size: 18px; max-width: ${props.width_title || "100%"} display: inline-block; margin-bottom: 0px;` }, props.title),
 					props.content  ? h("div","",h("small","",props.content))  : null,
 					props.subtitle ? h("div",{ class: "media-subtitle small" },h("small", { class: "text-muted" }, props.subtitle)) : null
 				),
@@ -1834,7 +1847,7 @@ class extends Component {
 	render ( ) {
 		const { props, state } = this
 		const { roomFooter, welcomeMessage, samplePromptsHeader, samplePrompts,
-			inputPlaceholder, userImage } = props;
+			inputPlaceholder, userImage, actions: userActions, onPrompt } = props;
 		const { incoming } = state;
 
 		const hints =
@@ -1884,6 +1897,24 @@ class extends Component {
 						})
 					)
 			   }
+		   },
+		   {
+			   match: /\/([a-z]*)$/,
+			  search: function (keyword, callback) {
+				   const query = keyword.slice(1)
+				   const items = userActions || [ ]
+				   const grep  = items.filter(item => item.label.indexOf(query) === 0)
+
+				   callback(grep)
+			  },
+			  component: function (item) {
+				return (
+					h(Chat.Chat.Widget.MediaProfile, {
+						title: item.label,
+						 size: "small"
+					})
+				)
+			  }
 		   }
 		]
 
@@ -1975,8 +2006,9 @@ class extends Component {
 								)
 							) : null,
 						h(Chat.chat.component.ChatForm, {
-							actions,
 							inputPlaceholder,
+							// userActions,
+							actions,
 							onchange: () => {
 								Chat.chat.message.typing(props.name)
 							},
@@ -2236,10 +2268,11 @@ class extends Component {
 	constructor (props) {
 		super (props);
 
-		const { content }   = props;
-		this._contentTokens = content.split(" ");
+		const { content, onComplete } = props;
+		this._contentTokens  = content.split(" ");
 
-		this.appendToken    = this.appendToken.bind(this);
+		this.appendToken     = this.appendToken.bind(this);
+		this._onComplete	 = onComplete;
 
 		this.state = {
 			content: ""
@@ -2251,7 +2284,8 @@ class extends Component {
 		const empty  = tokens.length === 0;
 		
 		if ( empty ) {
-			clearInterval(this.appendToken);
+			clearInterval(this.appendToken)
+			this._onComplete();
 		} else {
 			const next = `${this.state.content}${tokens.shift()}${empty ? "" : " "}`;
 			this.setState({ content: next });
@@ -2268,7 +2302,7 @@ class extends Component {
 		return (
 			h("div", {
 				dangerouslySetInnerHTML: {
-					__html: linkify(nl2br(content))
+					__html: nl2br(content)
 				}
 			})
 		)
@@ -2294,6 +2328,10 @@ class extends Component {
 		super (props)
 
 		this.onclick = this.onclick.bind(this)
+
+		this.state = {
+			streamComplete: false
+		}
 	}
 
 	onclick ( ) {
@@ -2306,9 +2344,10 @@ class extends Component {
 	}
 
 	render  ( ) {
-		const { props }  = this;
+		const { props, state }  = this;
 		let { content, actionsHeader, actions, links, linksHeader,
 			stream, onClickPrompt, onClickAction, type, creation, style } = props;
+		const { streamComplete } = state;
 
 		style = style || ""
 
@@ -2352,9 +2391,14 @@ class extends Component {
 								)
 								:
 								stream ?
-									h(Chat.chat.component.ChatStream, { content })
+									h(Chat.chat.component.ChatStream, {
+										content,
+										onComplete: () => {
+											this.setState({ streamComplete: true })
+										}
+									})
 									:
-									h("div", { dangerouslySetInnerHTML: { __html: linkify(nl2br(content)) } })
+									h("div", { dangerouslySetInnerHTML: { __html: nl2br(content) } })
 						),
 						!isEmpty(links) ?
 							h("div", { class: "chat-bubble-links" },
@@ -2381,6 +2425,8 @@ class extends Component {
 												class: "btn-xs chat-btn-action",
 												onclick: e => {
 													e.preventDefault()
+
+													console.log(action.onClickPrompt)
 													
 													if ( action.onClickPrompt ) {
 														action.onClickPrompt(action)
@@ -2496,10 +2542,10 @@ class extends Component {
 		return (
 			h("div",{class:"chat-form"},
 				state.hints.length ?
-					h("ul", { class: "hint-list list-group" },
+					h("ul", { class: "hint-list list-group", style: `margin-bottom: 0px !important` },
 						state.hints.map((item) => {
 							return (
-								h("li", { class: "hint-list-item list-group-item" },
+								h("li", { class: "hint-list-item list-group-item", style: `border-radius: 0px !important;` },
 									h("a", { href: "javascript:void(0)", onclick: () => {
 										this.setState({ content: item.content, hints: [ ] })
 									}},
@@ -2671,6 +2717,11 @@ Chat.chat.render = ({
 	roomFooter     = null,
 
 	inputPlaceholder = null,
+
+	userImage        = null,
+
+	actions          = null,
+	onAction         = null,
 } = { }) =>
 {
 	logger.info(`${render ? "Enable" : "Disable"} Chat for User.`);
@@ -2739,7 +2790,8 @@ Chat.chat.render = ({
 					selector,
 					roomName, botName, onQuery, active, fabIcon, helpMessage,
 					welcomeMessage, samplePromptsHeader, samplePrompts, roomFooter,
-					inputPlaceholder, botFeedback, botCopyMessage
+					inputPlaceholder, botFeedback, botCopyMessage, userImage,
+					actions, onAction
 				}
 
 				if ( !token ) {
@@ -2782,12 +2834,14 @@ Chat.realtime.on  = (event, callback) => {
 	document.addEventListener(event, callback)
 };
 
+
 const setup = ({
 	selector = null,
 
 	user     = null,
 	active   = true,
 	onQuery  = null,
+	onPrompt = null,
 
 	botName  = null,
 
@@ -2808,6 +2862,9 @@ const setup = ({
 	inputPlaceholder = null,
 
 	userImage        = null,
+
+	actions          = null,
+	onAction         = null,
 } = { }) => {
 	const logger = Logger.get('Chat')
 	
@@ -2842,6 +2899,7 @@ const setup = ({
 			render: true,
 			active,
 			onQuery,
+			onPrompt,
 
 			botName,
 			
@@ -2861,7 +2919,10 @@ const setup = ({
 			
 			inputPlaceholder,
 
-			userImage
+			userImage,
+
+			actions,
+			onAction
 		})
 	} else {
 		// Website Settings
@@ -2889,12 +2950,21 @@ const setup = ({
 	}
 }
 
+Chat.toggle = (toggle = null) => {
+	Chat.realtime.publish("Chat.chat.chatter:toggle", { toggle })
+}
+
+Chat.send_message = (message) => {
+	Chat.realtime.publish("Chat.chat.chatter:send", { message })
+}
+
 Chat.init = ({
 	selector = null,
 
 	user     = null,
 	active   = true,
 	onQuery  = null,
+	onPrompt = null,
 	botName  = null,
 
 	botFeedback    = null,
@@ -2914,11 +2984,15 @@ Chat.init = ({
 	inputPlaceholder = null,
 
 	userImage        = null,
+
+	actions          = null,
+	onAction         = null,
 } = { }) => {
 	setup({ selector, user, active, onQuery, botName, botFeedback,
 		botCopyMessage, roomName, fabIcon, helpMessage, welcomeMessage,
 		samplePromptsHeader,
-		samplePrompts, roomFooter, inputPlaceholder, userImage
+		samplePrompts, roomFooter, inputPlaceholder, userImage,
+		actions, onAction, onPrompt
 	});
 };
 
