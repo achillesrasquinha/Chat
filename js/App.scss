@@ -18,6 +18,19 @@ p {
 }
 
 .Chat-chat {
+    h1, h2, h3, h4, h5, h6 {
+        margin-top: 10px !important;
+        margin-bottom: 10px !important;
+    }
+
+    h1, h2, h3 {
+        font-size: 16px;
+    }
+
+    h4, h5, h6 {
+        font-size: 14px;
+    }
+
     .text-muted {
         color: #8D99A6 !important;
     }
@@ -247,6 +260,7 @@ p {
         right: 0px;
         margin: 15px;
         z-index: 99999;
+    
     }
     > .Chat-chat-popper > .Chat-chat-popper-collapse > .panel {
         position: relative;
@@ -453,8 +467,8 @@ p {
     
         &.Chat-fab-lg
         {
-                width: 64px;
-               height: 64px;
+                width: 72px;
+               height: 72px;
         }
     }
     
