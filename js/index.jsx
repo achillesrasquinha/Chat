@@ -110,7 +110,6 @@ Chat.call = (method, data = null, cb = null) => {
 					messages: CACHE.room[room],
 					last_message: message,
 					// type: "Visitor", // TODO: configure
-					// room_name: "Hi, I'm Alfred!"
 				});
 			}
 	}
@@ -634,7 +633,7 @@ Chat.chat.room.on.update = function (fn) {
 		if ( data.last_message )
 			// creation to datetime.datetime (easier to manipulate).
 			data = { ...data, last_message: { ...data.last_message, creation: new datetime.datetime(data.last_message.creation) } }
-		
+
 		fn(data.room, data)
 	})
 }
@@ -674,11 +673,10 @@ Chat.chat.message.typing = function (room, user) {
 
 Chat.chat.message.send   = function (room, message, { type = "Content",
 	user = null, prompts = null, promptsHeader = null,
-	links = null, linksHeader = null, stream = false, onClickPrompt = null } = { }) {
+	links = null, linksHeader = null, stream = false } = { }) {
 	Chat.call("Chat.chat.doctype.chat_message.chat_message.send",
 		{ user: user || Chat.session.user, room: room, content: message,
-			type, prompts, promptsHeader, links, linksHeader, stream,
-			onClickPrompt })
+			type, prompts, promptsHeader, links, linksHeader, stream })
 }
 
 Chat.chat.message.update = function (message, update, fn) {
@@ -1331,7 +1329,7 @@ class extends Component {
 	render () {
 		const me = this;
 		const { props, state } = this
-		const { onQuery, onPrompt, roomName, roomBanner, botName, active, fabIcon, helpMessage,
+		const { onQuery, onPrompt, onTyping, roomName, roomBanner, botName, active, fabIcon, helpMessage,
 			welcomeMessage, samplePromptsHeader, samplePrompts, roomFooter, inputPlaceholder,
 			actions, onAction } = props;
 
@@ -1451,7 +1449,7 @@ class extends Component {
 				else
 					Chat.chat.room.create("Direct", room.owner, squash(room.users), ({ name }) => this.room.select(name))
 			}})
-		const Room       = h(Chat.Chat.Widget.Room, { ...state.room, onQuery, onPrompt, welcomeMessage, 
+		const Room       = h(Chat.Chat.Widget.Room, { ...state.room, onQuery, onPrompt, onTyping, welcomeMessage, 
 			samplePromptsHeader, samplePrompts, actions, onAction,
 			inputPlaceholder, roomName, roomBanner, botName, roomFooter, layout: layout, destroy: () => {
 			this.setState({
@@ -1505,6 +1503,7 @@ Chat.Chat.Widget.Popper
 class extends Component {
 	constructor (props) {
 		super (props)
+		this.props = props
 		this.setup(props);
 	}
 
@@ -1638,8 +1637,6 @@ class extends Component {
 		const me               = this
 		const { props, state } = this
 		const { actions }      = props
-
-		console.log(actions)
 
 		return (
 			h("div", { class: `Chat-chat-action-bar ${props.class ? props.class : ""}` },
@@ -1839,11 +1836,26 @@ class extends Component {
 
 		this.setProgressMessage = this.setProgressMessage.bind(this)
 		this.sendMessage 		= this.sendMessage.bind(this)
+
+		this.onTyping = props.onTyping
 		
-		this.state = {
+		this.state 	  = {
 			incoming: false,
 			progressMessage: null
 		}
+	}
+
+	componentDidMount ( ) {
+		Chat.chat.room.on.typing((room, user) => {
+			if ( this.onTyping ) {
+				this.onTyping()
+			}
+		})
+
+		Chat.realtime.on("Chat.chat.chatter:send", ({ data: { message }}) => {
+			// TODO
+			console.log(message)
+		});
 	}
 
 	render ( ) {
@@ -1978,6 +1990,10 @@ class extends Component {
 							progressMessage: state.progressMessage,
 							welcomeMessage, samplePromptsHeader, samplePrompts,
 							onClickAction: async action => {
+								if ( onPrompt ) {
+									onPrompt(action);
+								}
+								
 								this.sendMessage(action)
 							}
 						})
@@ -2034,7 +2050,7 @@ class extends Component {
 
 	async sendMessage (message) {
 		const { props } = this;
-		const { name, onQuery, botName }  = props;
+		const { name, onQuery, onPrompt, botName }  = props;
 
 		if ( typeof message === 'string' ) {
 			message = {
@@ -2059,8 +2075,7 @@ class extends Component {
 					promptsHeader: response.promptsHeader,
 					links: response.links,
 					linksHeader: response.linksHeader,
-					stream: response.stream,
-					onClickPrompt: response.onClickPrompt
+					stream: response.stream
 				})
 			}
 
@@ -2175,8 +2190,7 @@ class extends Component {
 			var   message   = this.props.messages[i]
 			if ( i === 0 || !datetime.equal(message.creation, this.props.messages[i - 1].creation, 'day') )
 				messages.push({ type: "Notification", content: message.creation.format('MMMM D YYYY, hh:mm A'),
-					prompts: message.prompts, links: message.links, stream: message.stream,
-					onClickPrompt: message.onClickPrompt })
+					prompts: message.prompts, links: message.links, stream: message.stream })
 
 			messages.push(message)
 		}
@@ -2232,7 +2246,7 @@ class extends Component {
 		const { props } = this
 		const { content, actionsHeader, actions, links, linksHeader,
 			prompts, promptsHeader, stream, user, type, room_type, onClickAction,
-			botFeedback, botCopyMessage, onClickPrompt } = props
+			botFeedback, botCopyMessage } = props
 
 		const me        = user === Chat.session.user
 
@@ -2258,7 +2272,6 @@ class extends Component {
 							linksHeader,
 							links,
 							stream,
-							onClickPrompt,
 							onClickAction,
 							botFeedback,
 							botCopyMessage,
@@ -2353,8 +2366,7 @@ class extends Component {
 	render  ( ) {
 		const { props, state }  = this;
 		let { content, actionsHeader, actions, links, linksHeader,
-			stream, onClickPrompt, onClickAction, type, creation, style } = props;
-		const { streamComplete } = state;
+			stream, onClickAction, type, creation, style } = props;
 
 		style = style || ""
 
@@ -2372,9 +2384,7 @@ class extends Component {
 		if ( !isEmpty(actions) ) {
 			for ( let i = 0 ; i < actions.length ; ++i ) {
 				if ( typeof actions[i] === "string" ) {
-					actions[i] = { "type": "text", query: actions[i], key: actions[i],
-						onClickPrompt: onClickPrompt,
-					}
+					actions[i] = { "type": "text", query: actions[i], key: actions[i] }
 				}
 			}
 		}
@@ -2432,10 +2442,6 @@ class extends Component {
 												class: "btn-xs chat-btn-action",
 												onclick: e => {
 													e.preventDefault()
-
-													if ( action.onClickPrompt ) {
-														action.onClickPrompt(action)
-													}
 
 													if ( onClickAction ) {
 														onClickAction(action)
@@ -2704,6 +2710,8 @@ Chat.chat.render = ({
 	active   = true,
 	force    = false,
 	onQuery  = null,
+	onPrompt = null,
+	onTyping = null,
 
 	botName  = null,
 
@@ -2794,10 +2802,10 @@ Chat.chat.render = ({
 
 				const renderArgs = {
 					selector,
-					roomName, roomBanner, botName, onQuery, active, fabIcon, helpMessage,
+					roomName, roomBanner, botName, onQuery, onPrompt, active, fabIcon, helpMessage,
 					welcomeMessage, samplePromptsHeader, samplePrompts, roomFooter,
 					inputPlaceholder, botFeedback, botCopyMessage, userImage,
-					actions, onAction
+					actions, onAction, onTyping
 				}
 
 				if ( !token ) {
@@ -2848,6 +2856,7 @@ const setup = ({
 	active   = true,
 	onQuery  = null,
 	onPrompt = null,
+	onTyping = null,
 
 	botName  = null,
 
@@ -2907,6 +2916,7 @@ const setup = ({
 			active,
 			onQuery,
 			onPrompt,
+			onTyping,
 
 			botName,
 			
@@ -2972,7 +2982,10 @@ Chat.init = ({
 	user     = null,
 	active   = true,
 	onQuery  = null,
+
 	onPrompt = null,
+	onTyping = null,
+
 	botName  = null,
 
 	botFeedback    = null,
@@ -3001,7 +3014,7 @@ Chat.init = ({
 		botCopyMessage, roomName, roomBanner, fabIcon, helpMessage, welcomeMessage,
 		samplePromptsHeader,
 		samplePrompts, roomFooter, inputPlaceholder, userImage,
-		actions, onAction, onPrompt
+		actions, onAction, onPrompt, onTyping
 	});
 };
 

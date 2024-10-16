@@ -34,7 +34,7 @@ class Logger {
 		this.level  = level
 
 		if ( !this.level ) {
-			if ( true ) // REFACTOR
+			if ( false ) // REFACTOR
 				this.level = Logger.ERROR
 			else
 				this.level = Logger.NOTSET
