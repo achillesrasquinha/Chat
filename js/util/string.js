@@ -67,3 +67,9 @@ export const linkify = string => {
 
 	return string;
 }
+
+export const stripHtml = str => {
+    const element = document.createElement("div");
+    element.innerHTML = str;
+    return element.textContent || element.innerText || "";
+}

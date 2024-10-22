@@ -14,3 +14,16 @@ export const isMobile = () => {
 
 	return mobile
 }
+
+export const copyToClipboard = async text => {
+	let copied = false;
+
+	if ( navigator.clipboard ) {
+		await navigator.clipboard.writeText(text)
+		copied = true
+	} else {
+		console.warn("Clipboard API not available")
+	}
+
+	return copied
+}
