@@ -17,6 +17,51 @@ p {
     margin: 0 !important;
 }
 
+.no-padding {
+    padding: 0 !important;
+}
+
+.text-left {
+    text-align: left;
+}
+
+.text-right {
+    text-align: right;
+}
+
+.no-background {
+    background: none !important;
+}
+
+.bg-transparent {
+    background-color: transparent !important;
+}
+
+.no-border {
+    border: none !important;
+}
+
+.no-border-radius {
+    border-radius: 0 !important;
+}
+
+.no-border-left {
+    border-left: none !important;
+}
+
+.no-border-right {
+    border-right: none !important;
+}
+
+.btn-msg-action {
+    background: none !important;
+    border: none !important;
+}
+
+.btn-me-action {
+    background-color: #e1f7cf !important;
+}
+
 .Chat-chat {
     h1, h2, h3, h4, h5, h6 {
         margin-top: 10px !important;
@@ -262,6 +307,11 @@ p {
         z-index: 99999;
     
     }
+
+    .Chat-chat-popper-collapse {
+        transition: visibility 0s, opacity 0.5s linear;
+    }
+
     > .Chat-chat-popper > .Chat-chat-popper-collapse > .panel {
         position: relative;
         display: flex;
@@ -308,7 +358,7 @@ p {
     }
     > .Chat-chat-popper > .Chat-chat-popper-collapse > .panel.panel-bg {
         background-size: 350px 500px;
-        // background-image: url(https://raw.githubusercontent.com/frappe/frappe/v12.28.1/frappe/public/images/chat/wallpaper-default.jpg);
+        background-image: url(https://i.imgur.com/zjSve7f.png);
     }
     > .Chat-chat-popper > .Chat-chat-popper-collapse > .panel.panel-span {
         position: fixed;
@@ -395,7 +445,7 @@ p {
         // max-width: 75%;
         display: inline-block;
         padding: 5px 10px;
-        border-radius: 5px;
+        border-radius: 8px;
         -webkit-box-shadow: 0px 0.1px 0.5px 0px rgba(0, 0, 0, 0.5);
         -moz-box-shadow: 0px 0.1px 0.5px 0px rgba(0, 0, 0, 0.5);
         box-shadow: 0px 0.1px 0.5px 0px rgba(0, 0, 0, 0.5);
@@ -467,8 +517,16 @@ p {
     
         &.Chat-fab-lg
         {
-                width: 72px;
-               height: 72px;
+            width: 72px;
+            height: 72px;
+
+        }
+
+        &.Chat-fab-lg:hover
+        {
+            width: 75px;
+            height: 75px;
+            transition: all 0.3s;
         }
     }
     
@@ -484,7 +542,7 @@ p {
         background-color: #ECF0F1 !important;
     }
 
-    .chat-bubble-meta {
+    .chat-bubble-creation {
         text-align: right;
     }
 
@@ -494,12 +552,12 @@ p {
 
         button {
             text-align: left;
-            background-color: white !important;
+            // background-color: white !important;
         }
 
-        button:hover {
-            background-color: darken(#ECF0F1, 5%) !important;
-        }
+        // button:hover {
+            // background-color: darken(#ECF0F1, 5%) !important;
+        // }
     }
 
     .chat-room-footer-banner {
