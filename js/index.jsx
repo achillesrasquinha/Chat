@@ -1696,7 +1696,8 @@ class extends Component {
 		return (
 			h(Chat.components.Button, { size: "small", class: "btn-action", ...props },
 				props.icon ? h("i", { class: props.icon }) : null,
-				`${props.icon ? " " : ""}${props.label ? props.label : ""}`
+				`${props.icon ? " " : ""}${props.label ? props.label : ""}`,
+				
 			)
 		)
 	}
@@ -1941,11 +1942,13 @@ class extends Component {
 
 				   callback(grep)
 			  },
+			    content: (item) => `/${item.label} `,
 			  component: function (item) {
 				return (
 					h(Chat.Chat.Widget.MediaProfile, {
 						title: item.label,
-						 size: "small"
+						 size: "small",
+						subtitle: item.description,
 					})
 				)
 			  }
