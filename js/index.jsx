@@ -680,10 +680,10 @@ Chat.chat.message.typing = function (room, user) {
 
 Chat.chat.message.send   = function (room, message, { type = "Content",
 	user = null, prompts = null, promptsHeader = null,
-	links = null, linksHeader = null, stream = false } = { }) {
+	links = null, linksHeader = null, stream = false, userLabel = null } = { }) {
 	Chat.call("Chat.chat.doctype.chat_message.chat_message.send",
 		{ user: user || Chat.session.user, room: room, content: message,
-			type, prompts, promptsHeader, links, linksHeader, stream })
+			type, prompts, promptsHeader, links, linksHeader, stream, userLabel })
 }
 
 Chat.chat.message.update = function (message, update, fn) {
@@ -1653,7 +1653,7 @@ class extends Component {
 	render ( ) {
 		const me               = this
 		const { props, state } = this
-		const { actions }      = props
+		const { actions, onAction } = props
 
 		return (
 			h("div", { class: `Chat-chat-action-bar ${props.class ? props.class : ""}` },
@@ -1811,6 +1811,7 @@ Chat.Chat.Widget.MediaProfile
 class extends Component {
 	render ( ) {
 		const { props } = this
+		const { tags } = props;
 		const { size } = props;
 
 		const position  = Chat.Chat.Widget.MediaProfile.POSITION[props.position || "left"]
@@ -1831,7 +1832,15 @@ class extends Component {
 				h("div", { class: "media-body" },
 					h("div", { class: "media-heading ellipsis small", style: `font-size: ${size === "small" ? "12px" : "18px"}; max-width: ${props.width_title || "100%"} display: inline-block; margin-bottom: 0px;` }, props.title),
 					props.content  ? h("div","",h("small","",props.content))  : null,
-					props.subtitle ? h("div",{ class: "media-subtitle small" },h("small", { class: "text-muted" }, props.subtitle)) : null
+					props.subtitle ? h("div",{ class: "media-subtitle small" },h("small", { class: "text-muted" }, props.subtitle)) : null,
+					tags ? 
+						h("div", null,
+							tags.map((tag, i) => 
+								h("small", { key: i, class: `badge`, style: `background-color: ${tag.bg}; margin-right: 3px; font-size: 8px` },
+									tag.label
+								)
+							)
+						) : null
 				),
 				// position.class === "media-right" ? avatar : null
 			)
@@ -1861,7 +1870,8 @@ class extends Component {
 		this.state 	  = {
 			incoming: false,
 			progressMessage: null,
-			input: null
+			input: null,
+			showRoomFooter: true
 		}
 	}
 
@@ -1881,9 +1891,9 @@ class extends Component {
 	render ( ) {
 		const { props, state } = this
 		const { roomFooter, welcomeMessage, samplePromptsHeader, samplePrompts,
-			inputPlaceholder, userImage, actions: userActions, onPrompt,
+			inputPlaceholder, userImage, actions: userActions, onPrompt, onAction,
 			botFeedbackPositive, botFeedbackNegative, btnPromptRedo, botCopyMessage } = props;
-		const { incoming, input } = state;
+		const { incoming, input, showRoomFooter } = state;
 
 		const hints =
 		[
@@ -1938,7 +1948,11 @@ class extends Component {
 			  search: function (keyword, callback) {
 				   const query = keyword.slice(1)
 				   const items = userActions || [ ]
-				   const grep  = items.filter(item => item.label.indexOf(query) === 0)
+				   const results = Chat._.fuzzy_search(query, items, {
+					keys: Object.keys(items[0])
+				   })
+
+				   const grep = results.map(r => r.item)
 
 				   callback(grep)
 			  },
@@ -1949,6 +1963,7 @@ class extends Component {
 						title: item.label,
 						 size: "small",
 						subtitle: item.description,
+						tags: item.tags
 					})
 				)
 			  }
@@ -2045,7 +2060,7 @@ class extends Component {
 					),
 				props.name ?
 					h("div", { class: "chat-room-footer" },
-						roomFooter ?
+						roomFooter && showRoomFooter ?
 							h("div", { class: "chat-room-footer-banner panel panel-default", style: "margin: 0px !important;" },
 								h("div", { class: "panel-body" },
 									h("div", { dangerouslySetInnerHTML: { __html: roomFooter } })
@@ -2053,6 +2068,15 @@ class extends Component {
 							) : null,
 						h(Chat.chat.component.ChatForm, {
 							content: input,
+							onAction,
+							onHints: hints => {
+								let showRoomFooter = true;
+								if ( !isEmpty(hints) ) {
+									showRoomFooter = false;
+								}
+
+								// this.setState({ showRoomFooter })
+							},
 							inputPlaceholder,
 							// userActions,
 							actions,
@@ -2088,7 +2112,22 @@ class extends Component {
 			}
 		}
 
-		Chat.chat.message.send(name, message.query);
+		if ( message.query && message.query.startsWith("/")) {
+			const regex = /\/([^/\s]+)(?:\/([^/\s]+))?\s+(.*)/;
+			const match = message.query.match(regex);
+			let action = match[1];
+			const subaction = match[2] || null;
+			const query = match[3].trim();
+
+			action = subaction ? `${action}/${subaction}` : action;
+
+			message = {
+				type: "action", action,
+				query, queryLabel: `<b>/${action}</b> ${query}`
+			}
+		}
+
+		Chat.chat.message.send(name, message.queryLabel || message.query);
 
 		if ( onQuery ) {
 			this.setState({ incoming: true });
@@ -2593,6 +2632,7 @@ class extends Component {
 
 	hint (value) {
 		const { props, state } = this
+		const { onHints } = props
 
 		if ( props.hint ) {
 			const tokens =  value.split(" ")
@@ -2613,15 +2653,20 @@ class extends Component {
 							item = { component: hint.component(item), content: content }
 
 							return item
-						}).slice(0, hint.max || 5)
+						}).slice(0, hint.max || 3)
 
+						onHints && onHints(hints)
 						this.setState({ hints })
 					})
 				}
-				else
+				else {
+					onHints && onHints([])
 					this.setState({ hints: [ ] })
-			} else
+				}
+			} else {
+				onHints && onHints([])
 				this.setState({ hints: [ ] })
+			}
 		}
 	}
 
@@ -2642,8 +2687,8 @@ class extends Component {
 
 	render ( ) {
 		const { props, state } = this
-		let { inputPlaceholder } = props;
-		const { content } = state
+		let { inputPlaceholder, onAction } = props;
+		const { content, hints } = state
 
 		if ( !inputPlaceholder ) {
 			inputPlaceholder = __("Type a message...")
@@ -2653,10 +2698,10 @@ class extends Component {
 			h("div",{class:"chat-form"},
 				state.hints.length ?
 					h("ul", { class: "hint-list list-group", style: `margin-bottom: 0px !important` },
-						state.hints.map((item) => {
+						hints.map((item) => {
 							return (
 								h("li", { class: "hint-list-item list-group-item", style: `border-radius: 0px !important;` },
-									h("a", { href: "javascript:void(0)", onclick: () => {
+									h("a", { href: "javascript:void(0)", style: "text-decoration: none !important", onclick: () => {
 										this.setState({ content: item.content, hints: [ ] })
 									}},
 										item.component
@@ -3088,6 +3133,8 @@ Chat.toggle = (toggle = null) => {
 Chat.send_message = (message) => {
 	Chat.realtime.publish("Chat.chat.chatter:send", { message })
 }
+
+Chat.TYPE_MESSAGE_ACTION = 'action'
 
 Chat.init = ({
 	selector = null,
