@@ -69,10 +69,16 @@ p {
     }
 
     h1, h2, h3 {
-        font-size: 16px !important;
+        font-size: 14px !important;
     }
 
     h4, h5, h6 {
+        font-size: 14px !important;
+    }
+
+    blockquote {
+        padding: 5px 10px !important;
+        margin: 0 0 5px !important;
         font-size: 14px !important;
     }
 
@@ -305,7 +311,6 @@ p {
         right: 0px;
         margin: 15px;
         z-index: 99999;
-    
     }
 
     .Chat-chat-popper-collapse {
@@ -491,12 +496,13 @@ p {
     }
     .chat-list-notification {
         text-align: center;
+
     }
     .chat-list-notification-content {
         color: white;
         background-color: #8D99A6;
         display: inline-block;
-       /* padding: 5px;
+        /* padding: 5px;
         */
         border-radius: 20px;
         opacity: 0.5;
@@ -623,6 +629,11 @@ p {
         padding: 10px;
         border-radius: 5px;
         box-shadow: 0 3px 3px rgba(0, 0, 0, .25);
+
+        a {
+            text-decoration: none !important;
+            color: white;
+        }
     }
 
     .chat-btn-action {

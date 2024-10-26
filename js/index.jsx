@@ -680,10 +680,12 @@ Chat.chat.message.typing = function (room, user) {
 
 Chat.chat.message.send   = function (room, message, { type = "Content",
 	user = null, prompts = null, promptsHeader = null,
-	links = null, linksHeader = null, stream = false, userLabel = null } = { }) {
+	links = null, linksHeader = null, stream = false, messageActions = null, userLabel = null,
+	meta = null } = { }) {
 	Chat.call("Chat.chat.doctype.chat_message.chat_message.send",
 		{ user: user || Chat.session.user, room: room, content: message,
-			type, prompts, promptsHeader, links, linksHeader, stream, userLabel })
+			type, prompts, promptsHeader, links, linksHeader, stream, messageActions, userLabel,
+		meta })
 }
 
 Chat.chat.message.update = function (message, update, fn) {
@@ -1338,7 +1340,7 @@ class extends Component {
 		const { props, state } = this
 		const { onQuery, onPrompt, onTyping, roomName, roomBanner, botName, btnPromptRedo, active, fabIcon, helpMessage,
 			welcomeMessage, samplePromptsHeader, samplePrompts, roomFooter, inputPlaceholder,
-			actions, onAction, botFeedbackPositive, botFeedbackNegative, botCopyMessage } = props;
+			actions, onAction, botFeedbackPositive, botFeedbackNegative, botCopyMessage, onMessageAction } = props;
 
 		const ActionBar        = h(Chat.Chat.Widget.ActionBar, {
 			placeholder: __("Search or Create a New Chat"),
@@ -1456,7 +1458,7 @@ class extends Component {
 				else
 					Chat.chat.room.create("Direct", room.owner, squash(room.users), ({ name }) => this.room.select(name))
 			}})
-		const Room       = h(Chat.Chat.Widget.Room, { ...state.room, onQuery, onPrompt, onTyping, welcomeMessage, 
+		const Room       = h(Chat.Chat.Widget.Room, { ...state.room, onQuery, onPrompt, onTyping, onMessageAction, welcomeMessage, 
 			samplePromptsHeader, samplePrompts, actions, onAction, btnPromptRedo, botFeedbackPositive, botFeedbackNegative, botCopyMessage,
 			inputPlaceholder, roomName, roomBanner, botName, roomFooter, layout: layout, destroy: () => {
 			this.setState({
@@ -1892,7 +1894,7 @@ class extends Component {
 		const { props, state } = this
 		const { roomFooter, welcomeMessage, samplePromptsHeader, samplePrompts,
 			inputPlaceholder, userImage, actions: userActions, onPrompt, onAction,
-			botFeedbackPositive, botFeedbackNegative, btnPromptRedo, botCopyMessage } = props;
+			botFeedbackPositive, botFeedbackNegative, btnPromptRedo, botCopyMessage, onMessageAction } = props;
 		const { incoming, input, showRoomFooter } = state;
 
 		const hints =
@@ -2028,7 +2030,7 @@ class extends Component {
 							progressMessage: state.progressMessage,
 							welcomeMessage, samplePromptsHeader, samplePrompts,
 							botFeedbackPositive, botFeedbackNegative, 
-							btnPromptRedo, botCopyMessage,
+							btnPromptRedo, botCopyMessage, onMessageAction,
 							redoPrompt: (prompt) => {
 								this.setState({ input: prompt })
 							},
@@ -2144,7 +2146,9 @@ class extends Component {
 					promptsHeader: response.promptsHeader,
 					links: response.links,
 					linksHeader: response.linksHeader,
-					stream: response.stream
+					stream: response.stream,
+					messageActions: response.messageActions,
+					meta: response.meta
 				})
 			}
 
@@ -2253,14 +2257,15 @@ class extends Component {
 		const { props }    = this;
 		const { incoming, progressMessage, welcomeMessage, samplePromptsHeader, samplePrompts,
 			onClickAction, botFeedbackPositive, botFeedbackNegative,
-			btnPromptRedo, botCopyMessage, redoPrompt } = props;
+			btnPromptRedo, botCopyMessage, redoPrompt, onMessageAction } = props;
 
 		var messages = [ ]
 		for (var i   = 0 ; i < this.props.messages.length ; ++i) {
 			var   message   = this.props.messages[i]
 			if ( i === 0 || !datetime.equal(message.creation, this.props.messages[i - 1].creation, 'day') )
 				messages.push({ type: "Notification", content: message.creation.format('MMMM D YYYY, hh:mm A'),
-					prompts: message.prompts, links: message.links, stream: message.stream })
+					prompts: message.prompts, links: message.links, stream: message.stream, actions: message.messageActions,
+					meta: message.meta })
 
 			messages.push(message)
 		}
@@ -2272,7 +2277,7 @@ class extends Component {
 				botFeedbackNegative: m.user === "Guest" ? null : botFeedbackNegative,
 				botCopyMessage: m.user === "Guest" ? null : botCopyMessage,
 				btnPromptRedo: m.user !== "Guest" ? null : btnPromptRedo,
-				redoPrompt
+				redoPrompt, onMessageAction
 			}))
 
 		return (
@@ -2285,6 +2290,7 @@ class extends Component {
 						actionsHeader: samplePromptsHeader,
 						actions: samplePrompts,
 						onClickAction,
+						onMessageAction,
 					}) : null,
 				!isEmpty(messages) ?
 					h("span", null,
@@ -2320,9 +2326,9 @@ class extends Component {
 	render ( ) {
 		const { props } = this
 		const { content, actionsHeader, actions, links, linksHeader,
-			prompts, promptsHeader, stream, user, type, room_type, onClickAction,
+			prompts, promptsHeader, stream, messageActions, meta: messageMeta, user, type, room_type, onClickAction,
 			botFeedbackPositive, botFeedbackNegative, botCopyMessage,
-			redoPrompt } = props
+			redoPrompt, onMessageAction } = props
 
 		const me        = user === Chat.session.user
 
@@ -2348,11 +2354,14 @@ class extends Component {
 							linksHeader,
 							links,
 							stream,
+							messageActions,
 							onClickAction,
 							botFeedbackPositive,
 							botFeedbackNegative,
 							botCopyMessage,
-							redoPrompt
+							redoPrompt,
+							onMessageAction,
+							messageMeta
 						})
 					)
 			)
@@ -2445,9 +2454,9 @@ class extends Component {
 	render  ( ) {
 		const { props, state }  = this;
 		let { content, actionsHeader, actions, links, linksHeader,
-			stream, onClickAction, type, creation, style,
+			stream, messageActions, onClickAction, type, creation, style,
 			btnPromptRedo, botFeedbackPositive, botFeedbackNegative, botCopyMessage,
-			redoPrompt
+			redoPrompt, onMessageAction, messageMeta
 		} = props;
 		const { copied } = state;
 
@@ -2584,7 +2593,33 @@ class extends Component {
 								botFeedbackNegative ?
 									h("button",{class:"btn btn-xs btn-default btn-msg-action"},
 										"👎"
-									) : null
+									) : null,
+								messageActions ?
+									messageActions.map((action, i) => {
+										const progressHandler = (actionMutable) => {
+											this.setState({
+												[`messageAction-${action.key}`]: {
+													...action,
+													...actionMutable
+												}
+											})
+										}
+
+										return (
+											h("button",{
+												class:"btn btn-xs btn-default btn-msg-action",
+												onclick: async e => {
+													e.preventDefault()
+													onMessageAction && onMessageAction(action, messageMeta,
+														progressHandler
+													)
+												}
+											},
+												state[`messageAction-${action.key}`] ?
+													state[`messageAction-${action.key}`].icon : action.icon
+											)
+										)
+									}) : null
 							)
 						),
 						h("div",{class:"col-xs-6 no-padding text-right"},
@@ -2862,6 +2897,7 @@ Chat.chat.render = ({
 
 	botFeedbackPositive	= null,
 	botFeedbackNegative	= null,
+	onMessageAction = null,
 
 	botCopyMessage = null,
 
@@ -2952,7 +2988,7 @@ Chat.chat.render = ({
 					roomName, roomBanner, botName, onQuery, onPrompt, active, fabIcon, helpMessage,
 					welcomeMessage, samplePromptsHeader, samplePrompts, roomFooter,
 					inputPlaceholder, botFeedbackPositive, botFeedbackNegative, botCopyMessage, userImage,
-					actions, onAction, onTyping, btnPromptRedo
+					actions, onAction, onTyping, btnPromptRedo, onMessageAction
 				}
 
 				if ( !token ) {
@@ -3015,6 +3051,7 @@ const setup = ({
 
 	botFeedbackPositive	= null,
 	botFeedbackNegative = null,
+	onMessageAction = null,
 
 	botCopyMessage = null,
 
@@ -3078,6 +3115,7 @@ const setup = ({
 			
 			botFeedbackPositive,
 			botFeedbackNegative,
+			onMessageAction,
 
 			botCopyMessage,
 
@@ -3152,6 +3190,8 @@ Chat.init = ({
 	botFeedbackPositive = null,
 	botFeedbackNegative = null,
 
+	onMessageAction = null,
+
 	botCopyMessage = null,
 
 	roomName 	   = null,
@@ -3178,7 +3218,7 @@ Chat.init = ({
 		botCopyMessage, roomName, roomBanner, fabIcon, helpMessage, welcomeMessage,
 		samplePromptsHeader,
 		samplePrompts, roomFooter, inputPlaceholder, userImage,
-		actions, onAction, onPrompt, onTyping, btnPromptRedo
+		actions, onAction, onPrompt, onTyping, btnPromptRedo, onMessageAction
 	});
 };
 
