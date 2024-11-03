@@ -906,9 +906,9 @@ Chat.components.FAB.SIZE
 	{
 		class: "Chat-fab-sm"
 	},
-	large:
+	regular:
 	{
-		class: "Chat-fab-lg"
+		class: "Chat-fab"
 	}
 }
 
@@ -1577,7 +1577,7 @@ class extends Component {
 		const { hasClickedOnce } = state
 		const { helpMessage } = state
 
-		const iconClose = `<img src="${iconX}" style="width:14px;height:14px;"/>`
+		const iconClose = `<img src="${iconX}" style="width:12px;height:12px;"/>`
 
 		return !state.destroy ?
 		(
@@ -1591,7 +1591,7 @@ class extends Component {
 					h(Chat.components.FAB, {
 						  class: "Chat-fab",
 						   icon: state.active ? iconClose : fabIcon ? fabIcon : `font-heavy fa fa-fw fa-comment`,
-						   size: isMobile() ? null : "large",
+						   size: isMobile() ? null : "regular",
 						   type: "brand",
 						onclick: () => this.toggle(),
 					}) : null,
@@ -1832,7 +1832,7 @@ class extends Component {
 			h("div", { class: "media", style: position.class === "media-right" ? { "text-align": "right" } : null },
 				// position.class === "media-left"  ? avatar : null,
 				h("div", { class: "media-body" },
-					h("div", { class: "media-heading ellipsis small", style: `font-size: ${size === "small" ? "12px" : "18px"}; max-width: ${props.width_title || "100%"} display: inline-block; margin-bottom: 0px;` }, props.title),
+					h("div", { class: "media-heading ellipsis small", style: `font-size: ${size === "small" ? "12px" : "14px"}; max-width: ${props.width_title || "100%"} display: inline-block; margin-bottom: 0px;` }, props.title),
 					props.content  ? h("div","",h("small","",props.content))  : null,
 					props.subtitle ? h("div",{ class: "media-subtitle small" },h("small", { class: "text-muted" }, props.subtitle)) : null,
 					tags ? 
@@ -1948,15 +1948,18 @@ class extends Component {
 		   {
 			   match: /\/([a-z]*)$/,
 			  search: function (keyword, callback) {
-				   const query = keyword.slice(1)
-				   const items = userActions || [ ]
-				   const results = Chat._.fuzzy_search(query, items, {
-					keys: Object.keys(items[0])
-				   })
+				   	const query = keyword.slice(1)
+				   	const items = userActions || [ ]
+				   	const results = Chat._.fuzzy_search(query, items, {
+						keys: Object.keys(items[0])
+				    })
 
-				   const grep = results.map(r => r.item)
-
-				   callback(grep)
+				    if ( isEmpty(results) ) {
+						callback(userActions)
+				   	} else {
+					   const grep = results.map(r => r.item)
+					   	callback(grep)
+				   	}
 			  },
 			    content: (item) => `/${item.label} `,
 			  component: function (item) {

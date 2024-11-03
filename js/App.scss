@@ -517,21 +517,21 @@ p {
                 right: 0;
         border-radius: 50%;
            box-shadow: 0 5px 15px rgba(0, 0, 0, .25);
-               margin: 20px;
+               margin: 16px;
                 width: 48px;
                height: 48px;
     
-        &.Chat-fab-lg
+        &.Chat-fab
         {
-            width: 64px;
-            height: 64px;
+            width: 56px;
+            height: 56px;
 
         }
 
-        &.Chat-fab-lg:hover
+        &.Chat-fab:hover
         {
-            width: 72px;
-            height: 72px;
+            width: 64px;
+            height: 64px;
             transition: all 0.3s;
         }
     }
